@@ -1,0 +1,35 @@
+# Wikipedia's live edits: the policy behind Demo 5.
+# Every change to every Wikimedia wiki, as the public stream of recent changes sends it. Each
+# change goes into edits. A change to an article also goes into article_edits, and one made by
+# a person rather than a bot into article_editors, with the editor as a number made from the
+# user name, so the file never holds a name.
+
+stream edits {
+  key    wiki text               # the wiki's address, such as en.wikipedia.org
+  key    kind text               # edit, new, log, categorize or external
+  key    who text                # bot or person
+  value  bytes integer           # how much longer the page got; 0 for changes that are not edits
+  raw    keep 10m
+  rollup 10s keep 1h
+  rollup 1m  keep 7d
+  rollup 1h  keep 1y
+}
+
+stream article_edits {
+  key    wiki text
+  key    title text
+  value  bytes integer
+  rollup 1m keep 1h
+}
+
+stream article_editors {
+  key    wiki text
+  key    title text
+  key    editor integer
+  value  bytes integer
+  rollup 1m keep 1h
+}
+
+precompute changes     = count(edits)
+precompute changes_day = count(edits) by wiki per day
+precompute growth_day  = sum(edits.bytes) by wiki per day

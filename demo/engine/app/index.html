@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precomputing Engine Demo</title>
+<meta name="description" content="A simulated trading day of about four million trades, turned into candles by the Precomputing Engine in your browser. Pull the plug mid-write, race the compiled SQL, and check every closed candle.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://precomputing.com/demo/engine/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M12 25V8h6a4.5 4.5 0 0 1 0 9h-6' stroke='%2350C4CC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../lib/kit.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="/">Precomputing</a>
+    <span class="tag">Live demo: Engine</span>
+    <span class="grow"></span>
+    <a class="home" href="/demo/engine/">How to run it</a>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <p class="eyebrow">Answers ready before you ask</p>
+  <h1>A trading day of stock trades, turned into candles by the Engine in your browser</h1>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <noscript><p class="hint">This demo needs JavaScript switched on.</p></noscript>
+    <div class="row">
+      <button class="btn primary" id="btn-play" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path id="play-icon" d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <span id="play-label">Play</span>
+      </button>
+      <button class="btn" id="btn-stop" type="button" disabled title="Stop and go back to the open">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span>Stop</span>
+      </button>
+      <button class="btn" id="btn-review" type="button" disabled title="Finish the day at full speed and show the results">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h11M4 12h8M4 18h6"/><path d="M14 17l3 3 5-6"/></svg>
+        <span class="long">Review the results</span><span class="short">Results</span>
+      </button>
+      <div class="progress" aria-label="Progress of the trading day">
+        <div class="bar"><i id="bar"></i></div>
+        <span class="pct" id="clock">Loading SQLite and the Engine</span>
+      </div>
+    </div>
+    <div class="row">
+      <label class="field" for="sym">Symbol <select id="sym"></select></label>
+      <span class="seg" role="group" aria-label="Candle length">
+        <button type="button" id="res-1" aria-pressed="false" title="The last five minutes, second by second">1 s</button>
+        <button type="button" id="res-60" aria-pressed="true" title="The whole day, minute by minute">1 min</button>
+        <button type="button" id="res-3600" aria-pressed="false" title="The whole day, hour by hour">1 h</button>
+      </span>
+      <button class="btn small" id="btn-up" type="button" disabled>Jump up 5%</button>
+      <button class="btn small" id="btn-down" type="button" disabled>Drop 5%</button>
+      <button class="btn small warn" id="btn-plug" type="button" disabled title="Throw the Engine away in the middle of writing its file">Pull the plug</button>
+    </div>
+    <p class="hint" id="hint" role="status">Loading SQLite and the Engine.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="counters" aria-live="off">
+    <div class="counter"><div class="n" id="c-trades">0</div><div class="l">trades in</div></div>
+    <div class="counter"><div class="n" id="c-rate">–</div><div class="l">trades a second, now</div></div>
+    <div class="counter"><div class="n" id="c-busy">–</div><div class="l">of the time the Engine is busy</div></div>
+    <div class="counter good"><div class="n" id="c-top">–</div><div class="l">trades a second at full speed on this device</div></div>
+    <div class="counter"><div class="n" id="c-pending">0</div><div class="l">trades in memory, not yet in the file</div></div>
+    <div class="counter good"><div class="n" id="c-file">–</div><div class="l">the Engine's file</div></div>
+  </div>
+
+  <section class="card">
+    <h2 id="chart-title">Candles</h2>
+    <p class="sub" id="chart-sub">Drawn from the Engine's file with SQL, as it writes it.</p>
+    <div class="legend">
+      <span><i class="box up-box"></i>Up: closed at or above its open</span>
+      <span><i class="box down-box"></i>Down</span>
+      <span><i class="band" style="background:rgba(138,149,163,.45)"></i>Volume</span>
+      <span><i class="mark"></i>An unusual step: a price jump</span>
+    </div>
+    <div class="chart" id="candles"></div>
+    <p class="note">New York time. Prices and symbols are invented. Hover or use the arrow keys for a candle's open, high, low, close, VWAP and volume.</p>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Quote board</h2>
+      <p class="sub" id="quotes-sub">Seven precomputes, read from the file. Pick a row to chart it.</p>
+      <div class="table-wrap">
+        <table id="quotes">
+          <thead><tr><th>Symbol</th><th class="num">Last</th><th class="num">Change</th><th class="num">High</th><th class="num">Low</th><th class="num">Volume</th><th class="num">VWAP</th><th class="num">Trades</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Trades a second, all symbols</h2>
+      <p class="sub">Minute by minute, from the 1-minute candles: busy at the open and the close, calm at lunch.</p>
+      <div class="chart" id="rate-chart"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Price jumps</h2>
+      <p class="sub" id="alerts-sub">Trades whose step from the previous trade is far outside the usual steps, kept whole.</p>
+      <ul class="log" id="alerts"></ul>
+    </section>
+    <section class="card">
+      <h2>What happened</h2>
+      <p class="sub">Newest first.</p>
+      <ul class="log" id="log"></ul>
+    </section>
+  </div>
+
+  <section class="card" id="plug-card">
+    <h2>Pulling the plug</h2>
+    <p class="sub">The Engine is thrown away in the middle of writing a checkpoint: the whole program and everything in its memory. SQLite rolls the half-written checkpoint back, a fresh copy of the Engine opens the file, and the feed resends every trade after the last one the file holds. At 13:15 the demo does this once by itself.</p>
+    <div class="table-wrap">
+      <table id="plugs">
+        <thead><tr><th>When</th><th>By</th><th class="num">Trades only in memory</th><th class="num">Rows written, then rolled back</th><th class="num">Trades resent</th><th class="num">Back in</th><th>Candles checked afterwards</th></tr></thead>
+        <tbody><tr class="empty"><td colspan="7" class="muted">Not yet. Press Play, then Pull the plug whenever you like.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="race-card">
+    <h2>The race: the Engine against the compiled SQL</h2>
+    <p class="sub" id="race-sub">The first 200,000 trades of the day, rounded up to a whole second, through a fresh Engine and through the same policy compiled to SQLite triggers. Both take turns on the same thread in equal slices of time, then every value in the two files is compared.</p>
+    <div class="racebars">
+      <div class="racebar"><span>Engine</span><div class="bar"><i id="race-e"></i></div><span class="v" id="race-ev">–</span></div>
+      <div class="racebar sql"><span>SQL triggers</span><div class="bar"><i id="race-s"></i></div><span class="v" id="race-sv">–</span></div>
+    </div>
+    <div class="row"><button class="btn small primary" id="btn-race" type="button" disabled>Run the race</button><span class="muted" id="race-status">The trading day pauses while the race runs.</span></div>
+    <div id="race-out"></div>
+  </section>
+
+  <section class="card" id="policy-card">
+    <h2>The policy</h2>
+    <p class="sub">The same short policy runs in the Engine and, compiled, in plain SQLite. Candles are window summaries; the quote board is seven precomputes.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-policy" aria-selected="true">Policy</button>
+      <button type="button" role="tab" id="tab-sql" aria-selected="false">Compiled SQL</button>
+      <button type="button" role="tab" id="tab-compiler" aria-selected="false">Try the compiler</button>
+    </div>
+    <pre class="code" id="code"></pre>
+    <div id="compiler" hidden>
+      <p class="muted">Change the policy and compile it with the real compiler, the same program that runs the Engine here. The running demo keeps its own policy.</p>
+      <textarea id="compiler-src" spellcheck="false" aria-label="Policy to compile"></textarea>
+      <div class="row"><button class="btn small primary" id="compiler-run" type="button">Compile</button><span class="muted" id="compiler-status"></span></div>
+      <pre class="code" id="compiler-out" hidden></pre>
+    </div>
+  </section>
+
+  <section class="section" id="results" hidden>
+    <h2>Results</h2>
+    <p id="finishing"><span class="spin"></span> Finishing the day, then checking every closed candle against a recount of every trade.</p>
+    <div id="results-body" hidden>
+      <div class="callout" id="results-summary"></div>
+      <div class="grid2">
+        <div class="card">
+          <h2>Every closed candle, checked</h2>
+          <p class="sub">The file against a recount made straight from the trades as they were sent, by separate code that never sees the Engine.</p>
+          <div class="table-wrap"><table id="checks"></table></div>
+          <p class="note" id="checks-note"></p>
+        </div>
+        <div class="card">
+          <h2>What is in the file</h2>
+          <div class="table-wrap"><table id="file-tables"></table></div>
+          <p class="note" id="file-note"></p>
+          <div class="row" id="download-row"><button class="btn small" id="btn-download" type="button">Download the file</button><span class="muted">Opens in any SQLite tool.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ask">
+    <h2>Ask the file</h2>
+    <p>The Engine's file is plain SQLite, the same layout the compiled SQL keeps. Pick a question or write your own, then press Run (or Ctrl+Enter, ⌘+Enter on a Mac). It reads while the day is paused or finished.</p>
+    <div class="presets" id="presets"></div>
+    <textarea id="sql-text" spellcheck="false" aria-label="SQL query"></textarea>
+    <div class="row"><button class="btn small primary" id="sql-run" type="button" disabled>Run</button><span class="muted" id="sql-status"></span></div>
+    <div class="sql-out" id="sql-out" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <div class="wrap">Precomputing <span id="pc-version">0.1.1</span> Engine, built for the browser, with SQLite <span id="sqlite-version">3</span>, running in this page. Nothing is sent anywhere.</div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

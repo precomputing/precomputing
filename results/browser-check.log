@@ -1,0 +1,21 @@
+# The eight demos in headless Chromium 141, on the precomputing.com build with one engine, 5 October 2026
+
+Ready (the demo's start button enabled):
+sql     READY
+engine  READY
+meter   READY
+logs    READY
+live    READY (simulated changes; this machine can't reach stream.wikimedia.org)
+dejavu  READY
+mcp     READY
+traces  READY
+
+Run to the end:
+traces  2,045 model calls from 100 agent runs on 30 repositories. Sent whole, they come to 90.9 MB; the store keeps them in 6.5 MB, 14x smaller, and every one of them rebuilt from the file is the request as sent, byte for byte. 4 secrets were masked before storage. No page errors.
+mcp     11 tool calls, 785 tokens in the answers, 5,329,439 tokens for the raw data, 19 of 19 checks. No page errors.
+
+Screenshots at the ready state, against the earlier site that served MCP and Traces from a second engine:
+mcp, traces             identical
+sql, engine, meter, logs, live, dejavu
+                        the footer's version stamp changes from 0.1.0 to 0.1.1; nothing else visible
+                        (the other differing pixels are anti-aliasing noise, at most 3 of 765 levels)

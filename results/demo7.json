@@ -1,0 +1,428 @@
+{
+ "tools": [
+  "describe_file",
+  "get_answer",
+  "get_windows",
+  "get_kept",
+  "query"
+ ],
+ "describes": [
+  {
+   "server": "latency",
+   "bytes": 877,
+   "tokens": 219
+  },
+  {
+   "server": "trades",
+   "bytes": 1062,
+   "tokens": 266
+  },
+  {
+   "server": "usage",
+   "bytes": 1858,
+   "tokens": 465
+  },
+  {
+   "server": "shop",
+   "bytes": 3305,
+   "tokens": 826
+  }
+ ],
+ "answers": [
+  {
+   "i": 0,
+   "id": "latency",
+   "server": "latency",
+   "ask": "What was the p99 latency of /api/checkout between 10:00 and 11:00 UTC, and which requests stood out?",
+   "says": "p99 907 ms over 35,907 requests. The slowest, 2354.24 ms at 10:20, is kept whole.",
+   "checks": [
+    {
+     "what": "Requests in the hour",
+     "got": "35907",
+     "want": "35907",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Average",
+     "got": "153.0521528",
+     "want": "153.0521528",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Slowest request",
+     "got": "2354.24",
+     "want": "2354.24",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "p50, within 1%",
+     "got": "122.7",
+     "want": "122.45 (0.20% apart)",
+     "ok": true,
+     "rule": "within 1%"
+    },
+    {
+     "what": "p95, within 1%",
+     "got": "267.8",
+     "want": "265.24 (0.97% apart)",
+     "ok": true,
+     "rule": "within 1%"
+    },
+    {
+     "what": "p99, within 1%",
+     "got": "907",
+     "want": "905.5 (0.17% apart)",
+     "ok": true,
+     "rule": "within 1%"
+    },
+    {
+     "what": "The slowest request is kept whole",
+     "got": "2354.24",
+     "want": "2354.24",
+     "ok": true,
+     "rule": "equal"
+    }
+   ],
+   "bytes": 715,
+   "tokens": 179,
+   "raw": {
+    "events": 35907,
+    "bytes": 1134563,
+    "what": "every request to /api/checkout from 10:00 to 11:00 UTC, as CSV lines of ts, endpoint and ms",
+    "tokens": 283641
+   },
+   "calls": [
+    {
+     "tool": "get_windows",
+     "args": {
+      "stream": "latency",
+      "where": {
+       "endpoint": "/api/checkout"
+      },
+      "from": "2026-09-28T10:00:00Z",
+      "to": "2026-09-28T11:00:00Z",
+      "every": "all",
+      "stats": [
+       "n",
+       "avg",
+       "p50",
+       "p95",
+       "p99",
+       "max"
+      ]
+     },
+     "bytes": 371,
+     "tokens": 93,
+     "ms": 19.856244000000004,
+     "isError": false,
+     "text": "Stream latency, endpoint = /api/checkout, from 2026-09-28T10:00:00Z to 2026-09-28T11:00:00Z: one summary from 1 window of 1h.\nn,ms_avg,ms_max,ms_p50,ms_p95,ms_p99,unusual\n35907,153.0521528,2354.24,122.7,267.8,907,1125\nPercentiles are within 1% of the exact value. unusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n"
+    },
+    {
+     "tool": "get_kept",
+     "args": {
+      "kind": "anomalies",
+      "stream": "latency",
+      "where": {
+       "endpoint": "/api/checkout"
+      },
+      "from": "2026-09-28T10:00:00Z",
+      "to": "2026-09-28T11:00:00Z",
+      "order": "unusual",
+      "limit": 5
+     },
+     "bytes": 344,
+     "tokens": 86,
+     "ms": 8.176797999999962,
+     "isError": false,
+     "text": "Unusual events (log ms, z > 4) of stream latency, endpoint = /api/checkout, from 2026-09-28T10:00:00Z, before 2026-09-28T11:00:00Z: 5 of 54, the most unusual first.\ntime,ms,z\n2026-09-28T10:20:18Z,2354.24,8.56\n2026-09-28T10:56:39Z,2326.65,8.41\n2026-09-28T10:43:08Z,2050.58,7.89\n2026-09-28T10:18:15Z,1708.33,7.63\n2026-09-28T10:23:55Z,1595.5,7.39\n"
+    }
+   ]
+  },
+  {
+   "i": 1,
+   "id": "trades",
+   "server": "trades",
+   "ask": "What was SIM4's 1-minute candle at 10:30 New York time?",
+   "says": "Open 23.36, high 23.37, low 23.33, close 23.36; 522,174 shares in 1497 trades, VWAP 23.3507.",
+   "checks": [
+    {
+     "what": "Trades",
+     "got": "1497",
+     "want": "1497",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Open, high, low, close",
+     "got": "23.36 23.37 23.33 23.36",
+     "want": "23.36 23.37 23.33 23.36",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Volume",
+     "got": "522174",
+     "want": "522174",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "VWAP",
+     "got": "23.350700",
+     "want": "23.350700",
+     "ok": true,
+     "rule": "equal"
+    }
+   ],
+   "bytes": 514,
+   "tokens": 129,
+   "raw": {
+    "events": 1497,
+    "bytes": 38808,
+    "what": "SIM4's trades from 10:30 to 10:31 New York time, as CSV lines of ts, symbol, price and size",
+    "tokens": 9702
+   },
+   "calls": [
+    {
+     "tool": "get_windows",
+     "args": {
+      "stream": "trades",
+      "where": {
+       "symbol": "SIM4"
+      },
+      "from": "2026-09-28T10:30:00-04:00",
+      "to": "2026-09-28T10:31:00-04:00",
+      "stats": [
+       "n",
+       "first",
+       "max",
+       "min",
+       "last",
+       "sum"
+      ]
+     },
+     "bytes": 514,
+     "tokens": 129,
+     "ms": 17.062643000000094,
+     "isError": false,
+     "text": "Stream trades, symbol = SIM4, from 2026-09-28T14:30:00Z to 2026-09-28T14:31:00Z: one row per 1m window.\nstart,n,price_first,price_max,price_min,price_last,price_sum,size_first,size_max,size_min,size_last,size_sum,notional_first,notional_max,notional_min,notional_last,notional_sum,unusual\n2026-09-28T14:30:00Z,1497,23.36,23.37,23.33,23.36,34956.78,200,5000,1,100,522174,4672,116850,23.35,2336,12193128.61,0\nunusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n"
+    }
+   ]
+  },
+  {
+   "i": 2,
+   "id": "usage",
+   "server": "usage",
+   "ask": "What does Harbor Legal Drafts owe for September, line by line?",
+   "says": "$2,374.67 due for 39,586 requests on the pro plan: large $2,212.33, medium $162.35. Model cost $1,187.34.",
+   "checks": [
+    {
+     "what": "Requests billed",
+     "got": "39586",
+     "want": "39586",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Tokens in and out",
+     "got": "99873977 37356271",
+     "want": "99873977 37356271",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Amount due, in billionths of a dollar",
+     "got": "2374674473500",
+     "want": "2374674473500",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Model cost, in billionths of a dollar",
+     "got": "1187337236750",
+     "want": "1187337236750",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "The lines add up to the invoice",
+     "got": "2374674473500",
+     "want": "2374674473500",
+     "ok": true,
+     "rule": "equal"
+    }
+   ],
+   "bytes": 503,
+   "tokens": 126,
+   "raw": {
+    "events": 39586,
+    "bytes": 1762642,
+    "what": "Harbor Legal Drafts' September requests, as CSV lines of ts, request_id, customer, model, gateway, input_tokens and output_tokens",
+    "tokens": 440661
+   },
+   "calls": [
+    {
+     "tool": "get_answer",
+     "args": {
+      "name": "invoices",
+      "where": {
+       "customer": "harbor"
+      },
+      "period": "2026-09"
+     },
+     "bytes": 260,
+     "tokens": 65,
+     "ms": 39.62454300000002,
+     "isError": false,
+     "text": "invoices (view). Rows with customer = harbor; period 2026-09.\nname,plan,requests,input_tokens,output_tokens,list_nano,discount_nano,due_nano,due_cents,cost_nano\nHarbor Legal Drafts,pro,39586,99873977,37356271,2374674473500,0,2374674473500,237467,1187337236750\n"
+    },
+    {
+     "tool": "get_answer",
+     "args": {
+      "name": "invoice_lines",
+      "where": {
+       "customer": "harbor"
+      },
+      "period": "2026-09"
+     },
+     "bytes": 243,
+     "tokens": 61,
+     "ms": 13.787270999999919,
+     "isError": false,
+     "text": "invoice_lines (view). Rows with customer = harbor; period 2026-09.\nmodel,requests,input_tokens,output_tokens,list_nano,cost_nano\nlarge,23730,75589746,27192743,2212328616000,1106164308000\nmedium,15856,24284231,10163528,162345857500,81172928750\n"
+    }
+   ]
+  },
+  {
+   "i": 3,
+   "id": "shop",
+   "server": "shop",
+   "ask": "Which log patterns are new since the payment incident began at 12:40, and what do the errors say?",
+   "says": "3 new patterns: checkout WARN \"order failed\" from 12:40, payments ERROR \"charge failed\" from 12:40, search DEBUG \"ranking\" from 13:05. The errors: \"charge failed provider=northpay result=error\".",
+   "checks": [
+    {
+     "what": "New patterns since 12:40",
+     "got": "3",
+     "want": "3",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "Each: level, service, first line and count",
+     "got": "DEBUG search ranking 46734; ERROR payments charge failed 355; WARN checkout order failed 214",
+     "want": "DEBUG search ranking 46734; ERROR payments charge failed 355; WARN checkout order failed 214",
+     "ok": true,
+     "rule": "equal"
+    },
+    {
+     "what": "The error lines kept whole name the provider",
+     "got": "3 lines, northpay",
+     "want": "northpay",
+     "ok": true,
+     "rule": "equal"
+    }
+   ],
+   "bytes": 1403,
+   "tokens": 351,
+   "raw": {
+    "events": 202271,
+    "bytes": 18381738,
+    "what": "every log line the shop wrote from 12:40 to 14:00 UTC",
+    "tokens": 4595435
+   },
+   "calls": [
+    {
+     "tool": "get_kept",
+     "args": {
+      "kind": "templates",
+      "from": "2026-09-29T12:40:00Z"
+     },
+     "bytes": 868,
+     "tokens": 217,
+     "ms": 11.807121000000052,
+     "isError": false,
+     "text": "Log templates, first seen from 2026-09-29T12:40:00Z: 3, newest first. <*> marks the parts that vary; lines counts the lines that matched so far, and example is one of them.\nid,service,level,first_seen,last_seen,lines,template,example\n19,search,DEBUG,2026-09-29T13:05:00Z,2026-09-29T13:59:59Z,46734,ranking batch=<*> candidates=<*> features=<*> took_us=<*>,2026-09-29T13:05:00.327Z DEBUG search ranking batch=1 candidates=158 features=64 took_us=828\n18,payments,ERROR,2026-09-29T12:40:03Z,2026-09-29T12:47:58Z,355,charge failed provider=<*> result=<*> status=<*> amount=<*>,2026-09-29T12:40:03.011Z ERROR payments charge failed provider=northpay result=error status=503 amount=149.47\n17,checkout,WARN,2026-09-29T12:40:01Z,2026-09-29T12:47:59Z,214,order failed order=<*> reason=<*>,2026-09-29T12:40:01.540Z WARN  checkout order failed order=A-13077 reason=payment_error\n"
+    },
+    {
+     "tool": "get_kept",
+     "args": {
+      "kind": "samples",
+      "stream": "errors",
+      "where": {
+       "service": "payments"
+      },
+      "from": "2026-09-29T12:40:00Z",
+      "limit": 3
+     },
+     "bytes": 535,
+     "tokens": 134,
+     "ms": 12.445810999999935,
+     "isError": false,
+     "text": "Samples (5 per 1m per key) of stream errors, service = payments, from 2026-09-29T12:40:00Z: 3 of 40, newest first.\ntime,template,line\n2026-09-29T12:47:40Z,18,2026-09-29T12:47:40.276Z ERROR payments charge failed provider=northpay result=error status=503 amount=156.18\n2026-09-29T12:47:36Z,18,2026-09-29T12:47:36.559Z ERROR payments charge failed provider=northpay result=error status=503 amount=38.84\n2026-09-29T12:47:21Z,18,2026-09-29T12:47:21.748Z ERROR payments charge failed provider=northpay result=error status=503 amount=203.55\n"
+    }
+   ]
+  }
+ ],
+ "checks": 19,
+ "passed": 19,
+ "answerTokens": 785,
+ "describeTokens": 1776,
+ "rawTokens": 5329439,
+ "rawBytes": 21317751,
+ "files": [
+  {
+   "name": "latency",
+   "demo": 1,
+   "title": "API traffic (Demo 1)",
+   "fadeAt": 1790683200,
+   "when": "a day after its three hours",
+   "fullBytes": 4481024,
+   "fadedBytes": 2785280,
+   "gzBytes": 554677,
+   "fadedAtIso": "2026-09-29T12:00:00.000Z"
+  },
+  {
+   "name": "trades",
+   "demo": 2,
+   "title": "A trading day (Demo 2)",
+   "fadeAt": 1790629200,
+   "when": "an hour after the close",
+   "fullBytes": 9961472,
+   "fadedBytes": 589824,
+   "gzBytes": 248060,
+   "fadedAtIso": "2026-09-28T21:00:00.000Z"
+  },
+  {
+   "name": "usage",
+   "demo": 3,
+   "title": "A month of AI usage (Demo 3)",
+   "fadeAt": 1798675200,
+   "when": "on 31 December, when September's dispute window ends",
+   "fullBytes": 25321472,
+   "fadedBytes": 1916928,
+   "gzBytes": 828193,
+   "fadedAtIso": "2026-12-31T00:00:00.000Z"
+  },
+  {
+   "name": "shop",
+   "demo": 4,
+   "title": "A web shop's logs (Demo 4)",
+   "fadeAt": 1790863200,
+   "when": "two days after its two hours",
+   "fullBytes": 39796736,
+   "fadedBytes": 2310144,
+   "gzBytes": 490657,
+   "fadedAtIso": "2026-10-01T14:00:00.000Z"
+  }
+ ],
+ "sqlite": "3.53.4",
+ "wallMs": 414.62507200000005,
+ "native": {
+  "compared": 15,
+  "differ": 0,
+  "diffs": []
+ }
+}

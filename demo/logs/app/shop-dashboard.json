@@ -1,0 +1,12 @@
+{
+  "title": "Web shop",
+  "logs": { "format": "<timestamp> <level> <service> <message>" },
+  "panels": [
+    { "title": "Requests a minute by route", "where": { "service": "web" }, "measure": "count", "by": ["route"] },
+    { "title": "p95 latency by route", "where": { "service": "web" }, "measure": "p95", "field": "ms", "by": ["route"] },
+    { "title": "Errors a minute by service", "where": { "level": "ERROR" }, "measure": "count", "by": ["service"] },
+    { "title": "Payments by provider and result", "where": { "service": "payments" }, "measure": "count", "by": ["provider", "result"] },
+    { "title": "Revenue a minute", "where": { "service": "checkout" }, "measure": "sum", "field": "total" },
+    { "title": "Top searches", "type": "toplist", "where": { "service": "search" }, "measure": "count", "by": ["q"], "top": 10 }
+  ]
+}

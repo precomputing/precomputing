@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precomputing Wikipedia Live Demo</title>
+<meta name="description" content="Every change to every Wikipedia and Wikimedia wiki, from Wikimedia's public stream, counted by the Precomputing Engine in your browser as it happens: what people are editing now, the busiest wikis, and every count checked against a recount.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://precomputing.com/demo/live/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M12 25V8h6a4.5 4.5 0 0 1 0 9h-6' stroke='%2350C4CC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../lib/kit.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="/">Precomputing</a>
+    <span class="tag">Live demo: Wikipedia</span>
+    <span class="grow"></span>
+    <a class="home" href="/demo/live/">How to run it</a>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <p class="eyebrow">Answers ready before you ask</p>
+  <h1>Every change to every Wikipedia, counted as it happens, in your browser</h1>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <noscript><p class="hint">This demo needs JavaScript switched on.</p></noscript>
+    <div class="row">
+      <button class="btn primary" id="btn-live" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path id="live-icon" d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <span id="live-label">Connect to Wikipedia</span>
+      </button>
+      <button class="btn" id="btn-sim" type="button" disabled title="Invented changes shaped like the real stream, for when it can't be reached">
+        <span id="sim-label">Watch simulated changes</span>
+      </button>
+      <button class="btn" id="btn-clear" type="button" disabled title="Start a new file">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span>Clear</span>
+      </button>
+      <div class="source" id="source" aria-live="polite"><i class="pulse" id="pulse"></i><span id="source-text">Loading SQLite and the Engine</span></div>
+    </div>
+    <div class="row">
+      <label class="field" for="wiki">Chart and lists for
+        <select id="wiki">
+          <option value="all">every wiki</option>
+          <option value="wikipedias" selected>every Wikipedia</option>
+        </select>
+      </label>
+    </div>
+    <p class="hint" id="hint" role="status">Loading SQLite and the Engine.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="counters" aria-live="off">
+    <div class="counter"><div class="n" id="c-changes">0</div><div class="l">changes counted</div></div>
+    <div class="counter"><div class="n" id="c-rate">–</div><div class="l">changes a second, over the last minute</div></div>
+    <div class="counter"><div class="n" id="c-wikis">0</div><div class="l">wikis seen</div></div>
+    <div class="counter"><div class="n" id="c-bots">–</div><div class="l">made by bots, last 10 minutes</div></div>
+    <div class="counter good"><div class="n" id="c-checked">–</div><div class="l">counts checked, all equal</div></div>
+    <div class="counter"><div class="n" id="c-file">–</div><div class="l">the file, in this page</div></div>
+  </div>
+
+  <section class="section">
+    <h2>Changes every ten seconds, for up to half an hour</h2>
+    <p id="chart-sub">By people and by bots. Read from the file's 10-second windows each second.</p>
+    <div class="chart" id="chart" aria-label="Changes every ten seconds by people and by bots"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>What people are editing</h2>
+      <p class="sub">Articles changed by two or more people in about the last ten minutes, the most people first. Bots are left out.</p>
+      <div class="table-wrap">
+        <table id="trending">
+          <thead><tr><th>Article</th><th>Wiki</th><th class="num">People</th><th class="num">Edits</th><th class="num">Bytes</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <h2>The busiest wikis</h2>
+      <p class="sub">Every change in about the last ten minutes, and the share made by bots.</p>
+      <div class="bars" id="wikis"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>What kind of change</h2>
+      <p class="sub">In about the last ten minutes.</p>
+      <div class="table-wrap"><table id="kinds"></table></div>
+    </section>
+    <section class="card">
+      <h2>Every count, checked</h2>
+      <p class="sub">A recount kept apart from the Engine counts every change as it arrives. Every 30 seconds it checks each count and sum that could have changed.</p>
+      <p class="bigcheck" id="check-line">Nothing to check yet.</p>
+      <div class="row"><button class="btn small" id="btn-check" type="button" disabled>Check every count now</button><span class="muted" id="check-status"></span></div>
+      <p class="note" id="source-note">No user names or edit summaries are shown or kept. People are counted by a number made from the user name and a random value picked when this page opened.</p>
+    </section>
+  </div>
+
+  <section class="section" id="ask">
+    <h2>Ask the file</h2>
+    <p>The Engine keeps its answers in an SQLite file inside this page: a minute at a time for every wiki, kind and article, and every change whole for ten minutes. Pick a question or write your own, then press Run (or Ctrl+Enter, ⌘+Enter on a Mac).</p>
+    <div class="presets" id="presets"></div>
+    <textarea id="sql-text" spellcheck="false" aria-label="SQL query"></textarea>
+    <div class="row"><button class="btn small primary" id="sql-run" type="button" disabled>Run</button><span class="muted" id="sql-status"></span>
+      <span class="grow"></span><button class="btn small" id="btn-download" type="button" disabled>Download the file</button></div>
+    <div class="sql-out" id="sql-out" aria-live="polite"></div>
+  </section>
+
+  <section class="card" id="policy-card">
+    <h2>The policy</h2>
+    <p class="sub">Three streams: every change, changes to articles, and the people who made them. The page compiles it with the same Go program that runs the Engine.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-policy" aria-selected="true">Policy</button>
+      <button type="button" role="tab" id="tab-sql" aria-selected="false">Compiled SQL</button>
+    </div>
+    <pre class="code" id="code"></pre>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <div class="wrap">Precomputing <span id="pc-version">0.1.1</span> Engine, built for the browser, with SQLite <span id="sqlite-version">3</span>, running in this page. The changes come from Wikimedia's public stream of recent changes (stream.wikimedia.org) straight to this page. Nothing is sent anywhere else.</div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

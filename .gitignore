@@ -1,0 +1,12 @@
+# Build output and the files the checks write
+build/
+tools/node_modules/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+!demo/**/*.sqlite.gz
+
+# OS files
+.DS_Store
+Thumbs.db

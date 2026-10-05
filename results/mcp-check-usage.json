@@ -1,0 +1,83 @@
+{
+ "file": "build/verify/usage.sqlite",
+ "denied": 401,
+ "readTokenPosting": 403,
+ "same": true,
+ "runs": [
+  {
+   "label": "v2 client, pinned to 2026-07-28, HTTP",
+   "era": "modern",
+   "version": "2026-07-28",
+   "tools": [
+    "describe_file",
+    "get_answer",
+    "get_windows",
+    "get_kept",
+    "query"
+   ],
+   "ms": 84.320535,
+   "calls": 5,
+   "bytes": 2580
+  },
+  {
+   "label": "v2 client, auto, HTTP",
+   "era": "modern",
+   "version": "2026-07-28",
+   "tools": [
+    "describe_file",
+    "get_answer",
+    "get_windows",
+    "get_kept",
+    "query"
+   ],
+   "ms": 44.999352999999985,
+   "calls": 5,
+   "bytes": 2580
+  },
+  {
+   "label": "v1 client (handshake), HTTP",
+   "era": "legacy",
+   "version": "2025-11-25",
+   "tools": [
+    "describe_file",
+    "get_answer",
+    "get_windows",
+    "get_kept",
+    "query"
+   ],
+   "ms": 47.894132999999954,
+   "calls": 5,
+   "bytes": 2580
+  },
+  {
+   "label": "v2 client, auto, stdio",
+   "era": "modern",
+   "version": "2026-07-28",
+   "tools": [
+    "describe_file",
+    "get_answer",
+    "get_windows",
+    "get_kept",
+    "query"
+   ],
+   "ms": 58.84647800000005,
+   "calls": 5,
+   "bytes": 2580
+  },
+  {
+   "label": "v1 client (handshake), stdio",
+   "era": "legacy",
+   "version": "2025-11-25",
+   "tools": [
+    "describe_file",
+    "get_answer",
+    "get_windows",
+    "get_kept",
+    "query"
+   ],
+   "ms": 46.233821000000034,
+   "calls": 5,
+   "bytes": 2580
+  }
+ ]
+}

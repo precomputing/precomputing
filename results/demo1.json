@@ -1,0 +1,139 @@
+{
+ "events": 1080198,
+ "ingestMs": 51183.888154,
+ "rawBytes": 35233792,
+ "pcBytes": 4481024,
+ "pcBytesBeforeVacuum": 5054464,
+ "reduction": 7.862888482632541,
+ "rows": [
+  {
+   "endpoint": "/api/search",
+   "requests": 377840,
+   "requestsExact": 377840,
+   "avg": 31.963079822146476,
+   "avgExact": 31.96307982214694,
+   "avgError": 1.4560721135526814e-14,
+   "p99": 67.3626250245209,
+   "p99Exact": 67.51,
+   "p99Error": 0.0021830095612370027,
+   "rawMs": 628.390422000004
+  },
+  {
+   "endpoint": "/api/login",
+   "requests": 162399,
+   "requestsExact": 162399,
+   "avg": 47.96516788896549,
+   "avgExact": 47.965167888964835,
+   "avgError": 1.3628625639600572e-14,
+   "p99": 100.49456770856492,
+   "p99Exact": 101.14,
+   "p99Error": 0.006381572982352041,
+   "rawMs": 339.5580469999986
+  },
+  {
+   "endpoint": "/api/cart",
+   "requests": 270772,
+   "requestsExact": 270772,
+   "avg": 85.25506581182738,
+   "avgExact": 85.25506581182692,
+   "avgError": 5.333962815654524e-15,
+   "p99": 179.4906303359737,
+   "p99Exact": 179.83,
+   "p99Error": 0.0018871693489758187,
+   "rawMs": 461.9801279999956
+  },
+  {
+   "endpoint": "/api/checkout",
+   "requests": 107719,
+   "requestsExact": 107719,
+   "avg": 136.46505156936067,
+   "avgExact": 136.46505156936104,
+   "avgError": 2.7075226832523893e-15,
+   "p99": 572.5852753241754,
+   "p99Exact": 571.42,
+   "p99Error": 0.002039262406243163,
+   "rawMs": 249.2907090000008
+  },
+  {
+   "endpoint": "/api/report",
+   "requests": 161468,
+   "requestsExact": 161468,
+   "avg": 293.25722892461584,
+   "avgExact": 293.25722892461664,
+   "avgError": 2.7136854118466723e-15,
+   "p99": 620.2758780658384,
+   "p99Exact": 624.29,
+   "p99Error": 0.006429899460445639,
+   "rawMs": 352.26236100000096
+  }
+ ],
+ "spikes": {
+  "planned": 300,
+  "plannedKept": 300,
+  "yours": 0,
+  "yoursKept": 0,
+  "missedInFullMinute": 0
+ },
+ "outages": [
+  {
+   "endpoint": "/api/checkout",
+   "from": 5400,
+   "to": 5520,
+   "visitor": false,
+   "requests": 1395,
+   "flagged": 1111,
+   "keptWhole": 40
+  }
+ ],
+ "tableRows": [
+  [
+   "_pc_latency_by_endpoint",
+   5
+  ],
+  [
+   "_pcq_latency_ms_by_endpoint",
+   801
+  ],
+  [
+   "_precomputing",
+   4
+  ],
+  [
+   "_precomputing_objects",
+   8
+  ],
+  [
+   "latency_anomaly",
+   340
+  ],
+  [
+   "latency_base",
+   5
+  ],
+  [
+   "latency_ms_sk",
+   86682
+  ],
+  [
+   "latency_raw",
+   26423
+  ],
+  [
+   "latency_sample",
+   2700
+  ],
+  [
+   "latency_win",
+   6315
+  ]
+ ],
+ "readAllMs": 2.71841244999996,
+ "rawAllMs": 2031.481667,
+ "simpleReadUs": 5.803142600000137,
+ "rawTierRows": 26423,
+ "rawTierBytes": 1228800,
+ "anomalies": 340,
+ "sqlite": "3.53.4",
+ "wallMs": 53401.270646,
+ "series": 181
+}

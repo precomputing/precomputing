@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precomputing Logs Demo</title>
+<meta name="description" content="Two hours of a web shop's logs through the Precomputing log reducer in your browser: templates learned as lines arrive, a six-panel dashboard sent upstream as answers, errors kept whole, and every raw line kept on site.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://precomputing.com/demo/logs/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M12 25V8h6a4.5 4.5 0 0 1 0 9h-6' stroke='%2350C4CC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../lib/kit.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="/">Precomputing</a>
+    <span class="tag">Live demo: Logs</span>
+    <span class="grow"></span>
+    <a class="home" href="/demo/logs/">How to run it</a>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <p class="eyebrow">Answers ready before you ask</p>
+  <h1>Two hours of a web shop's logs: the answers go upstream, the lines stay home</h1>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <noscript><p class="hint">This demo needs JavaScript switched on.</p></noscript>
+    <div class="row">
+      <button class="btn primary" id="btn-play" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path id="play-icon" d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <span id="play-label">Play</span>
+      </button>
+      <button class="btn" id="btn-stop" type="button" disabled title="Stop and go back to 12:00">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span>Stop</span>
+      </button>
+      <button class="btn" id="btn-review" type="button" disabled title="Finish the two hours at full speed and show the results">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h11M4 12h8M4 18h6"/><path d="M14 17l3 3 5-6"/></svg>
+        <span class="long">Review the results</span><span class="short">Results</span>
+      </button>
+      <div class="progress" aria-label="Progress through the two hours">
+        <div class="bar"><i id="bar"></i></div>
+        <span class="pct" id="clock">Loading SQLite and the Engine</span>
+      </div>
+    </div>
+    <div class="row">
+      <label class="field" for="rate">Lines a second
+        <input id="rate" type="range" min="10" max="80" step="5" value="30">
+        <strong id="rate-val">30</strong>
+      </label>
+      <button class="btn small warn" id="btn-shard" type="button" disabled title="Search loses an index shard for three minutes and logs an error with every query">Break a search shard</button>
+    </div>
+    <p class="hint" id="hint" role="status">Loading SQLite and the Engine.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="counters" aria-live="off">
+    <div class="counter"><div class="n" id="c-lines">0</div><div class="l">lines written</div></div>
+    <div class="counter"><div class="n" id="c-raw">–</div><div class="l">raw logs, kept on site</div></div>
+    <div class="counter good"><div class="n" id="c-sent">–</div><div class="l">sent upstream</div></div>
+    <div class="counter good"><div class="n" id="c-ratio">–</div><div class="l">fewer bytes</div></div>
+    <div class="counter"><div class="n" id="c-templates">0</div><div class="l">templates learned</div></div>
+    <div class="counter"><div class="n" id="c-rate">–</div><div class="l">lines a second at full speed on this device</div></div>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>The logs, as they are written</h2>
+      <p class="sub">The newest lines from five services. All of them go into the file on site.</p>
+      <div class="loglines" id="tail" aria-live="off"></div>
+    </section>
+    <section class="card">
+      <h2>Templates learned</h2>
+      <p class="sub" id="tpl-sub">Each kind of line becomes a template, with &lt;*&gt; where lines differ. New ones appear at the top.</p>
+      <div class="table-wrap tpl-wrap">
+        <table id="templates">
+          <thead><tr><th class="num">#</th><th>Service</th><th>Level</th><th class="num">Lines</th><th>Template</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <section class="section" id="dash">
+    <h2>The dashboard, drawn from what was sent</h2>
+    <p>Six panels, read from the answers that went upstream each minute. Each panel checks every point against a recount of the raw lines.</p>
+    <div class="panels" id="panels"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Alerts sent upstream</h2>
+      <p class="sub">A new kind of WARN or ERROR line goes upstream at the next checkpoint, five seconds at most.</p>
+      <ul class="log alerts" id="alerts"></ul>
+    </section>
+    <section class="card">
+      <h2>What happened</h2>
+      <p class="sub">Newest first.</p>
+      <ul class="log" id="log"></ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>What it costs at Datadog's list prices</h2>
+      <p class="sub">The same month of logs sent two ways, at the rate so far. Change the prices to yours.</p>
+      <div class="row prices">
+        <label class="field" for="p-gb">$ per GB ingested <input id="p-gb" type="number" min="0" step="0.01" value="0.10"></label>
+        <label class="field" for="p-ev">$ per million events indexed <input id="p-ev" type="number" min="0" step="0.01" value="1.70"></label>
+      </div>
+      <div class="table-wrap">
+        <table id="cost">
+          <thead><tr><th></th><th class="num">GB a month</th><th class="num">Events a month</th><th class="num">Cost a month</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note">List prices checked on 29 September 2026: $0.10 per GB ingested and $1.70 per million log events indexed with 15-day retention, billed annually (<a href="https://www.datadoghq.com/pricing/?product=log-management" target="_blank" rel="noopener">datadoghq.com/pricing</a>). Everything sent upstream is counted as log events at the same prices.</p>
+    </section>
+    <section class="card">
+      <h2>Search the logs kept on site</h2>
+      <p class="sub">Every line stays in the file for 48 hours, whatever went upstream.</p>
+      <form class="row" id="search-form">
+        <input id="search-text" type="search" value="northpay" aria-label="Text to search for" autocomplete="off">
+        <button class="btn small primary" id="search-run" type="submit" disabled>Search</button>
+        <span class="muted" id="search-status"></span>
+      </form>
+      <div class="loglines results" id="search-out"><p class="muted">Type a word, such as northpay or 503, and press Search.</p></div>
+    </section>
+  </div>
+
+  <section class="card" id="policy-card">
+    <h2>The dashboard and its policy</h2>
+    <p class="sub">The importer reads the dashboard and writes the policy: one stream from logs per panel, plus every line kept and errors kept whole.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-dashboard" aria-selected="true">Dashboard</button>
+      <button type="button" role="tab" id="tab-policy" aria-selected="false">Policy</button>
+      <button type="button" role="tab" id="tab-sql" aria-selected="false">Compiled SQL</button>
+      <button type="button" role="tab" id="tab-import" aria-selected="false">Try the import</button>
+    </div>
+    <pre class="code" id="code"></pre>
+    <div id="importer" hidden>
+      <p class="muted">Change the dashboard, then import it with the same Go program that runs the reducer here. The running demo keeps its own policy.</p>
+      <textarea id="import-src" spellcheck="false" aria-label="Dashboard to import"></textarea>
+      <div class="row"><button class="btn small primary" id="import-run" type="button">Import</button><span class="muted" id="import-status"></span></div>
+      <pre class="code" id="import-out" hidden></pre>
+    </div>
+  </section>
+
+  <section class="section" id="results" hidden>
+    <h2>Results</h2>
+    <p id="finishing"><span class="spin"></span> Finishing the two hours at full speed, then checking every panel.</p>
+    <div id="results-body" hidden>
+      <div class="callout" id="results-summary"></div>
+      <div class="grid2">
+        <div class="card">
+          <h2>Every panel, checked</h2>
+          <p class="sub">What upstream drew from what it was sent, against a recount of the raw lines by separate code that never reads the file.</p>
+          <div class="table-wrap"><table id="checks"></table></div>
+          <p class="note" id="checks-note"></p>
+        </div>
+        <div class="card">
+          <h2>What is in the file</h2>
+          <div class="table-wrap"><table id="file-tables"></table></div>
+          <p class="note" id="file-note"></p>
+          <div class="row" id="download-row"><button class="btn small" id="btn-download" type="button">Download the file</button><span class="muted">Opens in any SQLite tool.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ask">
+    <h2>Ask the file</h2>
+    <p>The reducer's file is plain SQLite: the lines kept on site, the templates and every panel's windows. Pick a question or write your own, then press Run (or Ctrl+Enter, ⌘+Enter on a Mac). It reads while the run is paused or finished.</p>
+    <div class="presets" id="presets"></div>
+    <textarea id="sql-text" spellcheck="false" aria-label="SQL query"></textarea>
+    <div class="row"><button class="btn small primary" id="sql-run" type="button" disabled>Run</button><span class="muted" id="sql-status"></span></div>
+    <div class="sql-out" id="sql-out" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <div class="wrap">Precomputing <span id="pc-version">0.1.1</span> log reducer and Engine, built for the browser, with SQLite <span id="sqlite-version">3</span>, running in this page. The shop, its lines and its incident are invented. Nothing is sent anywhere.</div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

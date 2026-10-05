@@ -1,0 +1,333 @@
+{
+ "recorded": "2026-09-30",
+ "protocol": "2026-07-28",
+ "intro": "Recorded on 30 September 2026. The agent is Claude, made by Anthropic, connected to four precomputing serve --read-only servers, one for each file above, over HTTP with a read token, through the official MCP TypeScript client (version 2.2.0, protocol 2026-07-28). Claude built this release and had seen these files while building it; in this session it read them only through the tools. The questions were chosen before the first call. Every call, result and answer is shown as it happened, and each note on why a call was made was written with the call.",
+ "turns": [
+  {
+   "question": "Which API endpoint got slower over the three hours, and by how much at the 99th percentile?",
+   "steps": [
+    {
+     "server": "latency",
+     "tool": "describe_file",
+     "args": {},
+     "why": "Start by reading what the latency file keeps: its streams, keys and time span.",
+     "text": "A Precomputing file (format 1, written by precomputing 0.1.0). Times are UTC. The newest event is at 2026-09-28T11:59:59Z.\n\nStream latency: keys endpoint; values ms;\n  1080198 events from 2026-09-28T09:00:00Z to 2026-09-28T11:59:59Z.\n  Windows (get_windows): 10s kept 1d (none left); 1m kept 30d with percentiles of ms (2026-09-28T09:00:00Z to 2026-09-28T12:00:00Z); 1h kept 1y with percentiles of ms (2026-09-28T09:00:00Z to 2026-09-28T12:00:00Z).\n  Kept whole (get_kept): raw events kept 5m: none now; 3 samples per 1m per key: 2700; unusual values (log ms, z > 4, at most 20 per key per 1m): 340.\n  endpoint: /api/search, /api/cart, /api/login, /api/report, /api/checkout\n\nPrecomputes, kept current as events arrive (read them with get_answer):\n- requests = count(latency) by endpoint\n- avg_ms = avg(latency.ms) by endpoint\n- p99_ms = p99(latency.ms) by endpoint, within 1%\n",
+     "isError": false,
+     "bytes": 877
+    },
+    {
+     "server": "latency",
+     "tool": "get_windows",
+     "args": {
+      "stream": "latency",
+      "every": "1h",
+      "stats": [
+       "n",
+       "avg",
+       "p50",
+       "p99"
+      ]
+     },
+     "why": "Hourly windows with percentiles are kept, so compare each endpoint hour by hour. Without from and to the tool reads the last hour, so give the whole span.",
+     "text": "Stream latency, from 2026-09-28T11:00:00Z to 2026-09-28T12:00:00Z: one row per 1h window.\nstart,endpoint,n,ms_avg,ms_p50,ms_p99,unusual\n2026-09-28T11:00:00Z,/api/cart,90295,85.25108345,80.65,179.5,32\n2026-09-28T11:00:00Z,/api/checkout,35882,128.123995,120.3,273.2,11\n2026-09-28T11:00:00Z,/api/login,54203,47.93237865,45.15,100.5,13\n2026-09-28T11:00:00Z,/api/report,53918,311.595179,290.1,658.6,11\n2026-09-28T11:00:00Z,/api/search,126214,31.98222915,30.27,67.36,39\nPercentiles are within 1% of the exact value. unusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n",
+     "isError": false,
+     "bytes": 617
+    },
+    {
+     "server": "latency",
+     "tool": "get_windows",
+     "args": {
+      "stream": "latency",
+      "from": "2026-09-28T09:00:00Z",
+      "to": "2026-09-28T12:00:00Z",
+      "every": "1h",
+      "stats": [
+       "n",
+       "avg",
+       "p50",
+       "p99"
+      ]
+     },
+     "why": "That read only the last hour, because I left out from and to. Asking again for all three hours.",
+     "text": "Stream latency, from 2026-09-28T09:00:00Z to 2026-09-28T12:00:00Z: one row per 1h window.\nstart,endpoint,n,ms_avg,ms_p50,ms_p99,unusual\n2026-09-28T09:00:00Z,/api/cart,90124,85.17969198,80.65,179.5,20\n2026-09-28T09:00:00Z,/api/checkout,35930,128.2184818,120.3,267.8,13\n2026-09-28T09:00:00Z,/api/login,54353,47.89733189,45.15,100.5,9\n2026-09-28T09:00:00Z,/api/report,53834,274.9907555,257.3,584.2,11\n2026-09-28T09:00:00Z,/api/search,125457,31.93958504,29.67,67.36,35\n2026-09-28T10:00:00Z,/api/cart,90353,85.33422842,80.65,179.5,21\n2026-09-28T10:00:00Z,/api/checkout,35907,153.0521528,122.7,907,1125\n2026-09-28T10:00:00Z,/api/login,53843,48.0666549,45.15,102.5,27\n2026-09-28T10:00:00Z,/api/report,53716,293.1569188,273.2,620.3,13\n2026-09-28T10:00:00Z,/api/search,126169,31.96728586,30.27,67.36,31\n2026-09-28T11:00:00Z,/api/cart,90295,85.25108345,80.65,179.5,32\n2026-09-28T11:00:00Z,/api/checkout,35882,128.123995,120.3,273.2,11\n2026-09-28T11:00:00Z,/api/login,54203,47.93237865,45.15,100.5,13\n2026-09-28T11:00:00Z,/api/report,53918,311.595179,290.1,658.6,11\n2026-09-28T11:00:00Z,/api/search,126214,31.98222915,30.27,67.36,39\nPercentiles are within 1% of the exact value. unusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n",
+     "isError": false,
+     "bytes": 1275
+    },
+    {
+     "server": "latency",
+     "tool": "get_windows",
+     "args": {
+      "stream": "latency",
+      "where": {
+       "endpoint": "/api/checkout"
+      },
+      "from": "2026-09-28T10:00:00Z",
+      "to": "2026-09-28T11:00:00Z",
+      "every": "5m",
+      "stats": [
+       "n",
+       "p99"
+      ]
+     },
+     "why": "/api/report climbs every hour. /api/checkout jumps in the 10:00 hour only, with 1,125 unusual requests, so find when.",
+     "text": "Stream latency, endpoint = /api/checkout, from 2026-09-28T10:00:00Z to 2026-09-28T11:00:00Z: one row per 5m, added up from the 1m windows.\nstart,n,ms_p99,unusual\n2026-09-28T10:00:00Z,2539,278.7,2\n2026-09-28T10:05:00Z,2813,267.8,1\n2026-09-28T10:10:00Z,2996,267.8,0\n2026-09-28T10:15:00Z,3009,273.2,2\n2026-09-28T10:20:00Z,3220,278.7,2\n2026-09-28T10:25:00Z,3547,267.8,2\n2026-09-28T10:30:00Z,3337,1466,1111\n2026-09-28T10:35:00Z,3203,262.5,0\n2026-09-28T10:40:00Z,3051,267.8,2\n2026-09-28T10:45:00Z,2894,273.2,0\n2026-09-28T10:50:00Z,2726,273.2,2\n2026-09-28T10:55:00Z,2572,273.2,1\nPercentiles are within 1% of the exact value. unusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n",
+     "isError": false,
+     "bytes": 725
+    },
+    {
+     "server": "latency",
+     "tool": "get_windows",
+     "args": {
+      "stream": "latency",
+      "where": {
+       "endpoint": "/api/checkout"
+      },
+      "from": "2026-09-28T10:29:00Z",
+      "to": "2026-09-28T10:35:00Z",
+      "every": "1m",
+      "stats": [
+       "n",
+       "avg",
+       "p99"
+      ]
+     },
+     "why": "It is inside 10:30 to 10:35. One-minute rows to see exactly how long it lasted.",
+     "text": "Stream latency, endpoint = /api/checkout, from 2026-09-28T10:29:00Z to 2026-09-28T10:35:00Z: one row per 1m window.\nstart,n,ms_avg,ms_p99,unusual\n2026-09-28T10:29:00Z,719,128.2421419,273.2,0\n2026-09-28T10:30:00Z,706,760.5039943,1588,576\n2026-09-28T10:31:00Z,689,769.427344,1620,535\n2026-09-28T10:32:00Z,658,128.2782371,273.2,0\n2026-09-28T10:33:00Z,653,126.111317,257.3,0\n2026-09-28T10:34:00Z,631,128.5311727,290.1,0\nPercentiles are within 1% of the exact value. unusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n",
+     "isError": false,
+     "bytes": 569
+    }
+   ],
+   "answer": "/api/report is the endpoint that got slower, and it did so steadily: its p99 went from 584 ms in the 09:00 hour to 620 ms at 10:00 and 659 ms at 11:00, about 13% in three hours, and its average from 275 to 312 ms. Its traffic stayed level at about 54,000 requests an hour and it had no burst of unusual requests, so this is a gradual slowdown, not an incident.\n\n/api/checkout looks worse in the 10:00 hour (p99 907 ms), but that is one short incident: from 10:30 to 10:32 its average rose from about 128 ms to 760 to 770 ms and its p99 to about 1.6 seconds, with 1,111 requests flagged as unusual. By 10:32 it was back to normal, and it ended the three hours near 270 ms, where it started. The other three endpoints held steady. The percentiles come from the file's sketches and are within 1%.",
+   "at": "2026-09-30T07:27:55.215Z"
+  },
+  {
+   "question": "When did SIM6 move most during the day, and what did its trading look like in the minutes after?",
+   "steps": [
+    {
+     "server": "trades",
+     "tool": "describe_file",
+     "args": {},
+     "why": "Read what the trades file keeps.",
+     "text": "A Precomputing file (format 1, written by precomputing 0.1.0). Times are UTC. The newest event is at 2026-09-28T19:59:59Z.\n\nStream trades: keys symbol; values price, size; derived notional;\n  4048210 events from 2026-09-28T13:30:00Z to 2026-09-28T19:59:59Z.\n  Windows (get_windows): 1s kept 1h (none left); 1m kept 90d (2026-09-28T13:30:00Z to 2026-09-28T20:00:00Z); 1h kept forever (2026-09-28T13:00:00Z to 2026-09-28T20:00:00Z).\n  Kept whole (get_kept): raw events kept 5m: none now; unusual steps (log price change, z > 6, at most 5 per key per 1m): 3.\n  symbol: SIM1, SIM2, SIM3, SIM4, SIM5, SIM6, SIM7, SIM8\n\nPrecomputes, kept current as events arrive (read them with get_answer):\n- last_price = last(trades.price) by symbol\n- day_open = first(trades.price) by symbol per day\n- day_high = max(trades.price) by symbol per day\n- day_low = min(trades.price) by symbol per day\n- day_volume = sum(trades.size) by symbol per day\n- day_turnover = sum(trades.notional) by symbol per day\n- day_trades = count(trades) by symbol per day\n- trades_total = count(trades)\n",
+     "isError": false,
+     "bytes": 1062
+    },
+    {
+     "server": "trades",
+     "tool": "get_kept",
+     "args": {
+      "kind": "anomalies",
+      "stream": "trades",
+      "where": {
+       "symbol": "SIM6"
+      },
+      "order": "unusual"
+     },
+     "why": "The file keeps unusual price steps whole. The biggest one for SIM6 is where it moved most.",
+     "text": "Unusual events (log price change, z > 6) of stream trades, symbol = SIM6: 1, the most unusual first.\ntime,price,size,z\n2026-09-28T18:31:05Z,136.48,200,-610\n",
+     "isError": false,
+     "bytes": 156
+    },
+    {
+     "server": "trades",
+     "tool": "get_windows",
+     "args": {
+      "stream": "trades",
+      "where": {
+       "symbol": "SIM6"
+      },
+      "from": "2026-09-28T18:27:00Z",
+      "to": "2026-09-28T18:43:00Z",
+      "every": "1m",
+      "stats": [
+       "n",
+       "first",
+       "min",
+       "max",
+       "last",
+       "sum"
+      ]
+     },
+     "why": "One step, at 18:31:05 UTC (14:31:05 in New York), z of -610. One-minute candles from four minutes before to twelve after.",
+     "text": "Stream trades, symbol = SIM6, from 2026-09-28T18:27:00Z to 2026-09-28T18:43:00Z: one row per 1m window.\nstart,n,price_first,price_min,price_max,price_last,price_sum,size_first,size_min,size_max,size_last,size_sum,notional_first,notional_min,notional_max,notional_last,notional_sum,unusual\n2026-09-28T18:27:00Z,711,145.36,145.31,145.46,145.42,103367.09,300,1,5000,1000,247795,43608,145.32,727250,145420,36025529.92,0\n2026-09-28T18:28:00Z,729,145.41,145.31,145.5,145.37,105990.54,300,1,5000,58,225085,43623,145.35,727300,8431.46,32725733.67,0\n2026-09-28T18:29:00Z,713,145.37,145.29,145.53,145.45,103666.39,100,2,5000,100,217464,14537,290.66,727550,14545,31618326.33,0\n2026-09-28T18:30:00Z,873,145.46,145.16,145.57,145.22,126857.29,100,1,5000,2000,280666,14546,145.38,727500,290440,40784427.67,0\n2026-09-28T18:31:00Z,2731,145.22,136.46,145.24,136.76,373943.42,2,1,5000,1000,822767,290.44,136.67,726100,136760,112681903.3,1\n2026-09-28T18:32:00Z,2951,136.79,136.72,136.98,136.85,403832.4,2,1,5000,300,987994,273.58,136.84,684700,41055,135203541.3,0\n2026-09-28T18:33:00Z,2949,136.84,136.46,137.06,136.49,403421.9,100,1,5000,8,948822,13684,136.51,685100,1091.92,129804663.9,0\n2026-09-28T18:34:00Z,3069,136.5,136.17,136.66,136.25,418487.83,100,1,5000,100,981093,13650,136.21,683100,13625,133781971.7,0\n2026-09-28T18:35:00Z,3044,136.26,135.95,136.44,136.06,414642.94,2000,1,5000,100,922479,272520,135.98,682100,13606,125652374.9,0\n2026-09-28T18:36:00Z,1181,136.06,135.96,136.13,136.02,160688.07,200,1,5000,100,344648,27212,136.02,680550,13602,46893561.82,0\n2026-09-28T18:37:00Z,1053,136.02,135.82,136.11,135.89,143176.95,100,1,5000,100,395671,13602,136,680450,13589,53799669.95,0\n2026-09-28T18:38:00Z,1044,135.9,135.77,135.95,135.91,141842.66,100,1,5000,100,330788,13590,135.85,679650,13591,44943259.47,0\n2026-09-28T18:39:00Z,1047,135.89,135.84,136.05,136.02,142332.92,31,1,5000,100,378047,4212.59,135.89,680050,13602,51393842.85,0\n2026-09-28T18:40:00Z,1043,136,135.89,136.15,136.05,141869.6,100,1,5000,94,365951,13600,136.04,680450,12788.7,49775449.36,0\n2026-09-28T18:41:00Z,1039,136.08,136.06,136.43,136.27,141564.81,88,1,5000,33,328814,11975.04,136.12,681700,4496.91,44800566.3,0\n2026-09-28T18:42:00Z,1013,136.28,136.15,136.3,136.27,137987.68,100,1,5000,2000,370129,13628,136.21,681400,272540,50418029.01,0\nunusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n",
+     "isError": false,
+     "bytes": 2408
+    },
+    {
+     "server": "trades",
+     "tool": "get_windows",
+     "args": {
+      "stream": "trades",
+      "where": {
+       "symbol": "SIM6"
+      },
+      "from": "2026-09-28T13:00:00Z",
+      "to": "2026-09-28T20:00:00Z",
+      "every": "1h",
+      "stats": [
+       "n",
+       "first",
+       "min",
+       "max",
+       "last"
+      ]
+     },
+     "why": "Check the rest of the day by the hour, to be sure no slower move was bigger than the step.",
+     "text": "Stream trades, symbol = SIM6, from 2026-09-28T13:00:00Z to 2026-09-28T20:00:00Z: one row per 1h window.\nstart,n,price_first,price_min,price_max,price_last,size_first,size_min,size_max,size_last,notional_first,notional_min,notional_max,notional_last,unusual\n2026-09-28T13:00:00Z,54106,145.29,144.04,145.53,145.47,1000,1,5000,100,145290,144.09,727450,14547,0\n2026-09-28T14:00:00Z,75698,145.47,144.89,146.31,145.87,100,1,5000,300,14547,145.06,731300,43761,0\n2026-09-28T15:00:00Z,33766,145.87,145.28,146.32,145.85,37,1,5000,100,5397.19,145.33,731500,14585,0\n2026-09-28T16:00:00Z,21016,145.85,145.46,146.28,146.05,500,1,5000,100,72925,145.52,731350,14605,0\n2026-09-28T17:00:00Z,23320,146.03,144.49,146.08,144.6,100,1,5000,100,14603,144.58,730200,14460,0\n2026-09-28T18:00:00Z,57837,144.58,135.77,145.57,136.46,500,1,5000,300,72290,135.85,727550,40938,1\n2026-09-28T19:00:00Z,88000,136.46,136.32,138.16,138.08,200,1,5000,100,27292,136.42,690700,13808,0\nunusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n",
+     "isError": false,
+     "bytes": 1052
+    }
+   ],
+   "answer": "SIM6's biggest move by far was a single step at 14:31:05 New York time (18:31:05 UTC): the price fell from about 145.2 to 136.48 in one trade, about 6%. The file flagged it as SIM6's only unusual step of the day, with a z-score of -610. Until then SIM6 had traded between 144.04 and 146.32.\n\nIn the minutes after, trading jumped. Before the drop it ran at about 750 trades and 250,000 shares a minute; from 14:32 to 14:35 it ran at about 3,000 trades and 920,000 to 990,000 shares a minute, about four times as busy, while the price slid a little further, to 136.06. From 14:36 it calmed to about 1,050 trades a minute, still above its earlier pace, and held between 135.8 and 136.4. By the close at 16:00 it had recovered to 138.08, still about 5% below where it stood before the drop.",
+   "at": "2026-09-30T07:28:31.356Z"
+  },
+  {
+   "question": "Which customer brought the most revenue in September, and did anyone run out of quota?",
+   "steps": [
+    {
+     "server": "usage",
+     "tool": "describe_file",
+     "args": {},
+     "why": "Read what the usage file keeps.",
+     "text": "A Precomputing file (format 1, written by precomputing 0.1.0). Times are UTC. The newest event is at 2026-10-02T05:59:54Z.\n\nStream usage (exact, each event counted once by its request_id, periods of a month): keys customer, model, gateway; values input_tokens, output_tokens; derived tokens;\n  365490 events from 2026-09-01T00:00:10Z to 2026-10-02T05:59:54Z.\n  Windows (get_windows): 1h kept 400d (2026-09-01T00:00:00Z to 2026-10-02T06:00:00Z); 1d kept forever (2026-09-01T00:00:00Z to 2026-10-03T00:00:00Z).\n  Kept whole (get_kept): raw events kept until their month has been closed 90d: 15151, 2026-10-01T00:00:19Z to 2026-10-02T05:59:54Z.\n  customer: sundial, quarry, maple, harbor, juniper, northgate\n  model: medium, small, large\n  gateway: us, eu\n\nPrecomputes, kept current as events arrive (read them with get_answer):\n- requests_month = count(usage) by customer, model per month\n- input_month = sum(usage.input_tokens) by customer, model per month\n- output_month = sum(usage.output_tokens) by customer, model per month\n- tokens_month = sum(usage.tokens) by customer per month\n\nQuotas (get_answer):\n- monthly_tokens: tokens_month against a limit by customer per month; columns used, lim, remaining, reached (1 when used has reached lim)\n\nRefused events, counted by reason and key (get_answer):\n- usage_refused: closed 642, repeat 7219\n\nThe file's other tables and views (get_answer, or query):\n- invoice_lines (view): period, customer, model, requests, input_tokens, output_tokens, list_nano, cost_nano\n- invoices (view): period, customer, name, plan, requests, input_tokens, output_tokens, list_nano, discount_nano, due_nano, due_cents, cost_nano\n- customers (table): customer, name, plan, gateway\n- model_costs (table): model, input_nano, output_nano\n- plans (table): plan, name, quota, discount_pct\n- prices (table): model, input_nano, output_nano\n",
+     "isError": false,
+     "bytes": 1858
+    },
+    {
+     "server": "usage",
+     "tool": "get_answer",
+     "args": {
+      "name": "invoices",
+      "period": "2026-09"
+     },
+     "why": "Revenue is what each customer owes: the invoices view, for September.",
+     "text": "invoices (view). Rows with period 2026-09.\ncustomer,name,plan,requests,input_tokens,output_tokens,list_nano,discount_nano,due_nano,due_cents,cost_nano\nharbor,Harbor Legal Drafts,pro,39586,99873977,37356271,2374674473500,0,2374674473500,237467,1187337236750\njuniper,Juniper Bakery Blog,free,4264,3520373,1479936,6520159100,6520159100,0,0,3260079550\nmaple,Maple Grove Travel,pro,61126,56295382,23428080,155251075600,0,155251075600,15525,77625537800\nnorthgate,Northgate Tutors,free,1453,1106136,459207,882889200,882889200,0,0,441444600\nquarry,Quarry Road Media,pro,93120,121620192,50462787,683481418800,0,683481418800,68348,341740709400\nsundial,Sundial Research,enterprise,150790,234069673,92405125,3454874403100,863718600775,2591155802325,259116,1727437201550\n",
+     "isError": false,
+     "bytes": 758
+    },
+    {
+     "server": "usage",
+     "tool": "get_answer",
+     "args": {
+      "name": "monthly_tokens",
+      "period": "2026-09"
+     },
+     "why": "Quotas: reached is 1 for a customer that used its whole limit.",
+     "text": "monthly_tokens: tokens_month against a limit by customer per month; columns used, lim, remaining, reached (1 when used has reached lim). Rows with period 2026-09.\ncustomer,used,lim,remaining,reached\nharbor,137230248,300000000,162769752,0\njuniper,5000309,5000000,-309,1\nmaple,79723462,300000000,220276538,0\nnorthgate,1565343,5000000,3434657,0\nquarry,172082979,300000000,127917021,0\n",
+     "isError": false,
+     "bytes": 381
+    },
+    {
+     "server": "usage",
+     "tool": "get_windows",
+     "args": {
+      "stream": "usage",
+      "where": {
+       "customer": "juniper"
+      },
+      "by": [],
+      "from": "2026-09-20T00:00:00Z",
+      "to": "2026-10-01T00:00:00Z",
+      "every": "1d",
+      "stats": [
+       "n",
+       "sum"
+      ]
+     },
+     "why": "Juniper reached its quota. Its daily totals for the last part of the month show when; its month-to-date total is 5,000,309 tokens.",
+     "text": "Stream usage, customer = juniper, from 2026-09-20T00:00:00Z to 2026-10-01T00:00:00Z: one row per 1d window, every model and every gateway added together. The windows read cover 2026-09-20T00:00:00Z to 2026-09-28T00:00:00Z.\nstart,n,input_tokens_sum,output_tokens_sum,tokens_sum\n2026-09-20T00:00:00Z,69,57407,21443,78850\n2026-09-21T00:00:00Z,204,182975,79789,262764\n2026-09-22T00:00:00Z,202,152763,70448,223211\n2026-09-23T00:00:00Z,200,172497,75292,247789\n2026-09-24T00:00:00Z,205,158564,69255,227819\n2026-09-25T00:00:00Z,179,132090,65715,197805\n2026-09-26T00:00:00Z,73,59539,23386,82925\n2026-09-27T00:00:00Z,10,5796,4029,9825\n",
+     "isError": false,
+     "bytes": 625
+    }
+   ],
+   "answer": "Sundial Research brought the most revenue in September: $2,591.16 due, which is $3,454.87 at list price less its 25% Enterprise discount, for 150,790 requests. Harbor Legal Drafts was close behind at $2,374.67 for 39,586 requests. Quarry Road Media owes $683.48 and Maple Grove Travel $155.25, and the two Free customers owe nothing: $5,804.56 in all.\n\nOne customer ran out of quota: Juniper Bakery Blog, on the Free plan, reached its 5,000,000 tokens (5,000,309 were counted; the request that crossed the line still counts). Its daily usage stops on 27 September, with 10 requests that day and none after, which fits the gateway turning it away once the quota was reached. Nobody else came close: Quarry used 57% of its 300 million tokens, Harbor 46%, Northgate 31% of its 5 million and Maple 27%. Sundial, on Enterprise, has no quota.",
+   "at": "2026-09-30T07:29:06.497Z"
+  },
+  {
+   "question": "What went wrong in the shop between 12:30 and 13:30, and which payment provider was affected?",
+   "steps": [
+    {
+     "server": "shop",
+     "tool": "describe_file",
+     "args": {},
+     "why": "Read what the shop's log file keeps.",
+     "text": "A Precomputing file (format 1, written by precomputing 0.1.0). Times are UTC. The newest event is at 2026-09-29T13:59:59Z.\n\nStream lines (every log line): keys service, level, template; no values, events are counted;\n  281164 events from 2026-09-29T12:00:00Z to 2026-09-29T13:59:59Z.\n  Windows (get_windows): 1m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z); 10m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n  Kept whole (get_kept): raw events kept 2d: none now; 1 sample per 10m per key: 200.\n  service: web, search, checkout, login, payments\n  level: INFO, DEBUG, WARN, ERROR\n  template: 19 template ids (get_kept kind templates says what each is)\n\nStream errors (log lines where level = ERROR): keys service, template; no values, events are counted;\n  1209 events from 2026-09-29T12:00:03Z to 2026-09-29T13:59:52Z.\n  Windows (get_windows): 1m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n  Kept whole (get_kept): 5 samples per 1m per key: 604.\n  service: web, payments\n  template: 2 template ids (get_kept kind templates says what each is)\n\nStream web_by_route (log lines where service = web): keys route; no values, events are counted;\n  141316 events from 2026-09-29T12:00:00Z to 2026-09-29T13:59:59Z.\n  Windows (get_windows): 1m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n  route: /product/:id, /search, /, /api/recommendations, /cart, /login, /checkout\n\nStream web_ms_by_route (log lines where service = web): keys route; values ms;\n  141316 events from 2026-09-29T12:00:00Z to 2026-09-29T13:59:59Z.\n  Windows (get_windows): 1m kept 30d with percentiles of ms (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n  Kept whole (get_kept): unusual values (log ms, z > 4, at most 5 per key per 1m): 2.\n  route: /product/:id, /search, /, /api/recommendations, /cart, /login, /checkout\n\nStream error_by_service (log lines where level = ERROR): keys service; no values, events are counted;\n  1209 events from 2026-09-29T12:00:03Z to 2026-09-29T13:59:52Z.\n  Windows (get_windows): 1m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n  service: web, payments\n\nStream payments_by_provider_result (log lines where service = payments): keys provider, result; no values, events are counted;\n  9689 events from 2026-09-29T12:00:00Z to 2026-09-29T13:59:58Z.\n  Windows (get_windows): 1m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n  provider: northpay, quickcard, banklink\n  result: ok, declined, error\n\nStream checkout_total (log lines where service = checkout): values total;\n  8216 events from 2026-09-29T12:00:01Z to 2026-09-29T13:59:59Z.\n  Windows (get_windows): 1m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n\nStream search_by_q (log lines where service = search): keys q; no values, events are counted;\n  33904 events from 2026-09-29T12:00:00Z to 2026-09-29T13:59:59Z.\n  Windows (get_windows): 1m kept 30d (2026-09-29T12:00:00Z to 2026-09-29T14:00:00Z).\n  q: rain-jacket, running-shoes, tent, wool-socks, backpack, headlamp, sleeping-bag, water-bottle, hiking-boots, fleece, gloves, beanie, and 28 more\n\nLog templates: 19 learned, first seen from 2026-09-29T12:00:00Z to 2026-09-29T13:05:00Z. Lines are read as <timestamp> <level> <service> <message>. get_kept with kind templates lists them, and from a time lists the new ones.\n",
+     "isError": false,
+     "bytes": 3305
+    },
+    {
+     "server": "shop",
+     "tool": "get_kept",
+     "args": {
+      "kind": "templates",
+      "from": "2026-09-29T12:30:00Z",
+      "to": "2026-09-29T13:30:00Z",
+      "order": "oldest"
+     },
+     "why": "New kinds of log line are the quickest sign that something changed: the templates first seen in the window.",
+     "text": "Log templates, first seen from 2026-09-29T12:30:00Z, first seen before 2026-09-29T13:30:00Z: 3, oldest first. <*> marks the parts that vary; lines counts the lines that matched so far, and example is one of them.\nid,service,level,first_seen,last_seen,lines,template,example\n17,checkout,WARN,2026-09-29T12:40:01Z,2026-09-29T12:47:59Z,214,order failed order=<*> reason=<*>,2026-09-29T12:40:01.540Z WARN  checkout order failed order=A-13077 reason=payment_error\n18,payments,ERROR,2026-09-29T12:40:03Z,2026-09-29T12:47:58Z,355,charge failed provider=<*> result=<*> status=<*> amount=<*>,2026-09-29T12:40:03.011Z ERROR payments charge failed provider=northpay result=error status=503 amount=149.47\n19,search,DEBUG,2026-09-29T13:05:00Z,2026-09-29T13:59:59Z,46734,ranking batch=<*> candidates=<*> features=<*> took_us=<*>,2026-09-29T13:05:00.327Z DEBUG search ranking batch=1 candidates=158 features=64 took_us=828\n",
+     "isError": false,
+     "bytes": 908
+    },
+    {
+     "server": "shop",
+     "tool": "get_windows",
+     "args": {
+      "stream": "payments_by_provider_result",
+      "from": "2026-09-29T12:30:00Z",
+      "to": "2026-09-29T13:30:00Z",
+      "every": "10m"
+     },
+     "why": "Payment results by provider every ten minutes, to see which provider failed and for how long.",
+     "text": "Stream payments_by_provider_result, from 2026-09-29T12:30:00Z to 2026-09-29T13:30:00Z: one row per 10m, added up from the 1m windows.\nstart,provider,result,n\n2026-09-29T12:30:00Z,banklink,declined,16\n2026-09-29T12:30:00Z,banklink,ok,162\n2026-09-29T12:30:00Z,northpay,declined,33\n2026-09-29T12:30:00Z,northpay,ok,391\n2026-09-29T12:30:00Z,quickcard,declined,16\n2026-09-29T12:30:00Z,quickcard,ok,261\n2026-09-29T12:40:00Z,banklink,declined,14\n2026-09-29T12:40:00Z,banklink,ok,154\n2026-09-29T12:40:00Z,northpay,error,355\n2026-09-29T12:40:00Z,quickcard,declined,21\n2026-09-29T12:40:00Z,quickcard,ok,251\n2026-09-29T12:40:00Z,northpay,declined,4\n2026-09-29T12:40:00Z,northpay,ok,66\n2026-09-29T12:50:00Z,banklink,ok,146\n2026-09-29T12:50:00Z,northpay,declined,21\n2026-09-29T12:50:00Z,northpay,ok,364\n2026-09-29T12:50:00Z,quickcard,declined,21\n2026-09-29T12:50:00Z,quickcard,ok,228\n2026-09-29T12:50:00Z,banklink,declined,9\n2026-09-29T13:00:00Z,banklink,declined,9\n2026-09-29T13:00:00Z,banklink,ok,131\n2026-09-29T13:00:00Z,northpay,declined,24\n2026-09-29T13:00:00Z,northpay,ok,340\n2026-09-29T13:00:00Z,quickcard,declined,19\n2026-09-29T13:00:00Z,quickcard,ok,229\n2026-09-29T13:10:00Z,banklink,declined,9\n2026-09-29T13:10:00Z,banklink,ok,165\n2026-09-29T13:10:00Z,northpay,declined,23\n2026-09-29T13:10:00Z,northpay,ok,369\n2026-09-29T13:10:00Z,quickcard,declined,26\n2026-09-29T13:10:00Z,quickcard,ok,227\n2026-09-29T13:20:00Z,banklink,declined,17\n2026-09-29T13:20:00Z,banklink,ok,156\n2026-09-29T13:20:00Z,northpay,declined,35\n2026-09-29T13:20:00Z,northpay,ok,385\n2026-09-29T13:20:00Z,quickcard,declined,17\n2026-09-29T13:20:00Z,quickcard,ok,227\n",
+     "isError": false,
+     "bytes": 1627
+    },
+    {
+     "server": "shop",
+     "tool": "get_windows",
+     "args": {
+      "stream": "web_ms_by_route",
+      "where": {
+       "route": "/checkout"
+      },
+      "from": "2026-09-29T12:30:00Z",
+      "to": "2026-09-29T13:00:00Z",
+      "every": "5m",
+      "stats": [
+       "n",
+       "p50",
+       "p95"
+      ]
+     },
+     "why": "northpay returned errors from 12:40 to about 12:48 and the other providers look normal. Did shoppers feel it? Checkout latency on the web server.",
+     "text": "Stream web_ms_by_route, route = /checkout, from 2026-09-29T12:30:00Z to 2026-09-29T13:00:00Z: one row per 5m, added up from the 1m windows.\nstart,n,ms_p50,ms_p95,unusual\n2026-09-29T12:30:00Z,377,156,361.5,0\n2026-09-29T12:35:00Z,385,165.7,347.3,0\n2026-09-29T12:40:00Z,367,459.5,1002,1\n2026-09-29T12:45:00Z,386,333.7,944,1\n2026-09-29T12:50:00Z,319,162.4,327.1,0\n2026-09-29T12:55:00Z,338,156,376.2,0\nPercentiles are within 1% of the exact value. unusual counts the events the anomaly rule flagged; get_kept with kind anomalies returns those kept whole.\n",
+     "isError": false,
+     "bytes": 550
+    },
+    {
+     "server": "shop",
+     "tool": "get_windows",
+     "args": {
+      "stream": "lines",
+      "by": [
+       "service"
+      ],
+      "from": "2026-09-29T12:50:00Z",
+      "to": "2026-09-29T13:20:00Z",
+      "every": "10m",
+      "stats": [
+       "n"
+      ]
+     },
+     "why": "The other new pattern, search DEBUG ranking lines from 13:05, is not an error, but it may be a lot of lines. Lines per service before and after.",
+     "text": "Stream lines, from 2026-09-29T12:50:00Z to 2026-09-29T13:20:00Z: one row per 10m window, every level and every template added together.\nstart,service,n\n2026-09-29T12:50:00Z,checkout,2135\n2026-09-29T12:50:00Z,login,1703\n2026-09-29T12:50:00Z,payments,849\n2026-09-29T12:50:00Z,search,2739\n2026-09-29T12:50:00Z,web,11489\n2026-09-29T13:00:00Z,checkout,2026\n2026-09-29T13:00:00Z,login,1604\n2026-09-29T13:00:00Z,payments,812\n2026-09-29T13:00:00Z,search,6837\n2026-09-29T13:00:00Z,web,11565\n2026-09-29T13:10:00Z,checkout,2226\n2026-09-29T13:10:00Z,login,1720\n2026-09-29T13:10:00Z,payments,879\n2026-09-29T13:10:00Z,search,11580\n2026-09-29T13:10:00Z,web,11909\n",
+     "isError": false,
+     "bytes": 648
+    }
+   ],
+   "answer": "Two things changed in that hour.\n\nAt 12:40 the payment provider northpay started failing. From 12:40:03 to 12:47:58 its charges came back as errors with status 503: 355 failed charges, while northpay's successful charges fell from 391 in the ten minutes before to 66. The other two providers, quickcard and banklink, carried on as usual. Shoppers felt it: 214 orders failed with reason payment_error between 12:40:01 and 12:47:59, and the web server's /checkout requests slowed from a median of about 160 ms to 460 ms, with a p95 near one second, until about 12:50. After 12:48 northpay's charges went through again.\n\nAt 13:05 search started writing a new DEBUG line, ranking batch. It is not an error, but it is loud: search went from about 2,700 lines every ten minutes to about 11,600, four times as many, and the new pattern had written 46,734 lines by 14:00.",
+   "at": "2026-09-30T07:29:35.161Z"
+  }
+ ]
+}

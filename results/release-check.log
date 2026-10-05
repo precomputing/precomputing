@@ -1,0 +1,22 @@
+# The amd64 release binary (static, musl, stripped), 5 October 2026
+
+$ precomputing version
+precomputing 0.1.1 (file format 1, SQLite 3.53.4)
+
+$ precomputing demo
+4048210 trades in 9.89 s: 409380 trades a second, with a checkpoint every 10000 trades (400 in all, sync full).
+Recount: 27174 candles checked against every trade, 0 differences; quote board 0 differences; trades_total right.
+Race, the first 200332 trades: the Engine 711752 a second, the triggers 13338 a second (53.4x).
+The two files: 122793 rows, 576218 values, identical.
+
+Files written by the release binary from the data of the headless runs, compared with tools/filecompare:
+demo3 against the browser's SQL file:      9 tables, 453536 rows, 2949652 values, 0 differences
+demo4 against the browser's file:          24 tables, 352525 rows, 1794042 values, 1 differences (the known last bit of a logarithm)
+demo4 against the development build's:     24 tables, 352525 rows, 1794042 values, 0 differences
+demo5 against the browser's file:          10 tables, 119668 rows, 1596566 values, 0 differences
+demo6 against the browser's file:          5 tables, 45366 rows, 328955 values, 0 differences
+demo6 against the development build's:     5 tables, 45366 rows, 328955 values, 0 differences
+demo7 (node tools/run-demo7.mjs --native): 19 of 19 checks, native and browser answers differ in 0 calls
+demo8 call generated-0046#67 rebuilt:      sha256 e7acd6054e92a809..., the same as the development build
+
+The arm64 binary is built the same way and has not been run here.

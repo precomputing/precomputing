@@ -1,0 +1,2914 @@
+{
+ "sqlite": "3.53.4",
+ "history": {
+  "lines": 2133322,
+  "rawBytes": 192531388,
+  "templates": 25,
+  "bytes": 3653632,
+  "sha256": "92a7479e2c98455b",
+  "sameAsShipped": true,
+  "buildMs": 32808.021861999994,
+  "counts": {
+   "cells": 18669,
+   "equal": 18669
+  },
+  "minutesChecked": 1379,
+  "alarms": 47,
+  "inIncident": 47,
+  "falseAlarms": [],
+  "caught": [
+   {
+    "id": 1,
+    "after": 60
+   },
+   {
+    "id": 2,
+    "after": 60
+   },
+   {
+    "id": 3,
+    "after": 60
+   },
+   {
+    "id": 4,
+    "after": 60
+   },
+   {
+    "id": 5,
+    "after": 60
+   },
+   {
+    "id": 6,
+    "after": 60
+   }
+  ]
+ },
+ "today": {
+  "lines": 242635,
+  "historyLines": 2133322,
+  "rawBytes": 21897625,
+  "engineMs": 2978.763514999744,
+  "checks": 721,
+  "checkMs": 2679.514584000026,
+  "maxCheckMs": 15.999511000001803,
+  "fileBytes": 3768320,
+  "templates": 27,
+  "outcomes": [
+   {
+    "n": 1,
+    "kind": "payments",
+    "key": "payments:northpay",
+    "provider": "northpay",
+    "host": null,
+    "at": 1092,
+    "minutes": 8,
+    "by": "script",
+    "name": "Card payments failing (northpay)",
+    "knownAtStart": true,
+    "detected": 8,
+    "named": 8,
+    "namedAs": 1,
+    "newAt": null,
+    "wrong": 0,
+    "wrongAs": null,
+    "episodes": [
+     1
+    ],
+    "ok": true
+   },
+   {
+    "n": 2,
+    "kind": "dbpool",
+    "key": "dbpool",
+    "provider": null,
+    "host": null,
+    "at": 3160,
+    "minutes": 7,
+    "by": "script",
+    "name": "Database pool exhausted",
+    "knownAtStart": true,
+    "detected": 10,
+    "named": 10,
+    "namedAs": 4,
+    "newAt": null,
+    "wrong": 0,
+    "wrongAs": null,
+    "episodes": [
+     2
+    ],
+    "ok": true
+   },
+   {
+    "n": 3,
+    "kind": "tls",
+    "key": "tls",
+    "provider": null,
+    "host": "img.cdn-a.example",
+    "at": 4445,
+    "minutes": 6,
+    "by": "script",
+    "name": "Image CDN certificate expired",
+    "knownAtStart": false,
+    "detected": 5,
+    "named": null,
+    "namedAs": null,
+    "newAt": 5,
+    "wrong": 0,
+    "wrongAs": null,
+    "episodes": [
+     3
+    ],
+    "ok": true
+   },
+   {
+    "n": 4,
+    "kind": "attack",
+    "key": "attack",
+    "provider": null,
+    "host": null,
+    "at": 5670,
+    "minutes": 5,
+    "by": "script",
+    "name": "Login attack",
+    "knownAtStart": true,
+    "detected": 10,
+    "named": 10,
+    "namedAs": 2,
+    "newAt": null,
+    "wrong": 0,
+    "wrongAs": null,
+    "episodes": [
+     4
+    ],
+    "ok": true
+   },
+   {
+    "n": 5,
+    "kind": "tls",
+    "key": "tls",
+    "provider": null,
+    "host": "img.cdn-b.example",
+    "at": 6500,
+    "minutes": 5,
+    "by": "script",
+    "name": "Image CDN certificate expired",
+    "knownAtStart": true,
+    "detected": 10,
+    "named": 10,
+    "namedAs": 7,
+    "newAt": null,
+    "wrong": 0,
+    "wrongAs": null,
+    "episodes": [
+     5
+    ],
+    "ok": true
+   }
+  ],
+  "falseAlarms": [],
+  "episodes": 5,
+  "counts": {
+   "cells": 1661,
+   "same": 1661,
+   "first": null,
+   "minute": {
+    "cells": 1629,
+    "same": 1629,
+    "windows": 120
+   },
+   "hour": {
+    "cells": 32,
+    "same": 32,
+    "windows": 2
+   },
+   "minutes": 120
+  },
+  "timeline": [
+   [
+    1100,
+    "match",
+    1,
+    0.756
+   ],
+   [
+    1110,
+    "match",
+    1,
+    0.997
+   ],
+   [
+    1120,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1130,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1140,
+    "match",
+    1,
+    0.996
+   ],
+   [
+    1150,
+    "match",
+    1,
+    1
+   ],
+   [
+    1160,
+    "match",
+    1,
+    1
+   ],
+   [
+    1170,
+    "match",
+    1,
+    1
+   ],
+   [
+    1180,
+    "match",
+    1,
+    1
+   ],
+   [
+    1190,
+    "match",
+    1,
+    1
+   ],
+   [
+    1200,
+    "match",
+    1,
+    1
+   ],
+   [
+    1210,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1220,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1230,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1240,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1250,
+    "match",
+    1,
+    0.997
+   ],
+   [
+    1260,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1270,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1280,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1290,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1300,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1310,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1320,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1330,
+    "match",
+    1,
+    0.995
+   ],
+   [
+    1340,
+    "match",
+    1,
+    0.995
+   ],
+   [
+    1350,
+    "match",
+    1,
+    0.996
+   ],
+   [
+    1360,
+    "match",
+    1,
+    0.996
+   ],
+   [
+    1370,
+    "match",
+    1,
+    0.997
+   ],
+   [
+    1380,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1390,
+    "match",
+    1,
+    1
+   ],
+   [
+    1400,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1410,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1420,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1430,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1440,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1450,
+    "match",
+    1,
+    0.997
+   ],
+   [
+    1460,
+    "match",
+    1,
+    0.998
+   ],
+   [
+    1470,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1480,
+    "match",
+    1,
+    1
+   ],
+   [
+    1490,
+    "match",
+    1,
+    1
+   ],
+   [
+    1500,
+    "match",
+    1,
+    1
+   ],
+   [
+    1510,
+    "match",
+    1,
+    1
+   ],
+   [
+    1520,
+    "match",
+    1,
+    1
+   ],
+   [
+    1530,
+    "match",
+    1,
+    1
+   ],
+   [
+    1540,
+    "match",
+    1,
+    1
+   ],
+   [
+    1550,
+    "match",
+    1,
+    1
+   ],
+   [
+    1560,
+    "match",
+    1,
+    1
+   ],
+   [
+    1570,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1580,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1590,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1600,
+    "match",
+    1,
+    0.999
+   ],
+   [
+    1610,
+    "match",
+    1,
+    1
+   ],
+   [
+    1620,
+    "match",
+    1,
+    1
+   ],
+   [
+    1630,
+    "match",
+    1,
+    0.987
+   ],
+   [
+    1640,
+    "partly",
+    6,
+    0.692
+   ],
+   [
+    1650,
+    "partly",
+    6,
+    0.692
+   ],
+   [
+    1660,
+    "partly",
+    6,
+    0.692
+   ],
+   [
+    3170,
+    "match",
+    4,
+    0.908
+   ],
+   [
+    3180,
+    "match",
+    4,
+    0.977
+   ],
+   [
+    3190,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3200,
+    "match",
+    4,
+    0.971
+   ],
+   [
+    3210,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3220,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3230,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3240,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3250,
+    "match",
+    4,
+    0.97
+   ],
+   [
+    3260,
+    "match",
+    4,
+    0.97
+   ],
+   [
+    3270,
+    "match",
+    4,
+    0.971
+   ],
+   [
+    3280,
+    "match",
+    4,
+    0.971
+   ],
+   [
+    3290,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3300,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3310,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3320,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3330,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3340,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3350,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3360,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3370,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3380,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3390,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3400,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3410,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3420,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3430,
+    "match",
+    4,
+    0.971
+   ],
+   [
+    3440,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3450,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3460,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3470,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3480,
+    "match",
+    4,
+    0.972
+   ],
+   [
+    3490,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3500,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3510,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3520,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3530,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3540,
+    "match",
+    4,
+    0.973
+   ],
+   [
+    3550,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3560,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3570,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3580,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3590,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3600,
+    "match",
+    4,
+    0.974
+   ],
+   [
+    3610,
+    "match",
+    4,
+    0.975
+   ],
+   [
+    3620,
+    "match",
+    4,
+    0.975
+   ],
+   [
+    3630,
+    "match",
+    4,
+    0.976
+   ],
+   [
+    3640,
+    "match",
+    4,
+    0.976
+   ],
+   [
+    3650,
+    "match",
+    4,
+    0.976
+   ],
+   [
+    3660,
+    "match",
+    4,
+    0.976
+   ],
+   [
+    4450,
+    "new",
+    null,
+    0
+   ],
+   [
+    4460,
+    "new",
+    null,
+    0
+   ],
+   [
+    4470,
+    "new",
+    null,
+    0
+   ],
+   [
+    4480,
+    "new",
+    null,
+    0
+   ],
+   [
+    4490,
+    "new",
+    null,
+    0
+   ],
+   [
+    4500,
+    "new",
+    null,
+    0
+   ],
+   [
+    4510,
+    "new",
+    null,
+    0
+   ],
+   [
+    4520,
+    "new",
+    null,
+    0
+   ],
+   [
+    4530,
+    "new",
+    null,
+    0
+   ],
+   [
+    4540,
+    "new",
+    null,
+    0
+   ],
+   [
+    4550,
+    "new",
+    null,
+    0
+   ],
+   [
+    4560,
+    "new",
+    null,
+    0
+   ],
+   [
+    4570,
+    "new",
+    null,
+    0
+   ],
+   [
+    4580,
+    "new",
+    null,
+    0
+   ],
+   [
+    4590,
+    "new",
+    null,
+    0
+   ],
+   [
+    4600,
+    "new",
+    null,
+    0
+   ],
+   [
+    4610,
+    "new",
+    null,
+    0
+   ],
+   [
+    4620,
+    "new",
+    null,
+    0
+   ],
+   [
+    4630,
+    "new",
+    null,
+    0
+   ],
+   [
+    4640,
+    "new",
+    null,
+    0
+   ],
+   [
+    4650,
+    "new",
+    null,
+    0
+   ],
+   [
+    4660,
+    "new",
+    null,
+    0
+   ],
+   [
+    4670,
+    "new",
+    null,
+    0
+   ],
+   [
+    4680,
+    "new",
+    null,
+    0
+   ],
+   [
+    4690,
+    "new",
+    null,
+    0
+   ],
+   [
+    4700,
+    "new",
+    null,
+    0
+   ],
+   [
+    4710,
+    "new",
+    null,
+    0
+   ],
+   [
+    4720,
+    "new",
+    null,
+    0
+   ],
+   [
+    4730,
+    "new",
+    null,
+    0
+   ],
+   [
+    4740,
+    "new",
+    null,
+    0
+   ],
+   [
+    4750,
+    "new",
+    null,
+    0
+   ],
+   [
+    4760,
+    "new",
+    null,
+    0
+   ],
+   [
+    4770,
+    "new",
+    null,
+    0
+   ],
+   [
+    4780,
+    "new",
+    null,
+    0
+   ],
+   [
+    4790,
+    "new",
+    null,
+    0
+   ],
+   [
+    4800,
+    "new",
+    null,
+    0
+   ],
+   [
+    4810,
+    "new",
+    null,
+    0
+   ],
+   [
+    4820,
+    "new",
+    null,
+    0
+   ],
+   [
+    4830,
+    "new",
+    null,
+    0
+   ],
+   [
+    4840,
+    "new",
+    null,
+    0
+   ],
+   [
+    4850,
+    "new",
+    null,
+    0
+   ],
+   [
+    4860,
+    "new",
+    null,
+    0
+   ],
+   [
+    5680,
+    "match",
+    2,
+    1
+   ],
+   [
+    5690,
+    "match",
+    2,
+    1
+   ],
+   [
+    5700,
+    "match",
+    2,
+    1
+   ],
+   [
+    5710,
+    "match",
+    2,
+    1
+   ],
+   [
+    5720,
+    "match",
+    2,
+    1
+   ],
+   [
+    5730,
+    "match",
+    2,
+    1
+   ],
+   [
+    5740,
+    "match",
+    2,
+    1
+   ],
+   [
+    5750,
+    "match",
+    2,
+    1
+   ],
+   [
+    5760,
+    "match",
+    2,
+    1
+   ],
+   [
+    5770,
+    "match",
+    2,
+    1
+   ],
+   [
+    5780,
+    "match",
+    2,
+    1
+   ],
+   [
+    5790,
+    "match",
+    2,
+    1
+   ],
+   [
+    5800,
+    "match",
+    2,
+    1
+   ],
+   [
+    5810,
+    "match",
+    2,
+    1
+   ],
+   [
+    5820,
+    "match",
+    2,
+    1
+   ],
+   [
+    5830,
+    "match",
+    2,
+    1
+   ],
+   [
+    5840,
+    "match",
+    2,
+    1
+   ],
+   [
+    5850,
+    "match",
+    2,
+    1
+   ],
+   [
+    5860,
+    "match",
+    2,
+    1
+   ],
+   [
+    5870,
+    "match",
+    2,
+    1
+   ],
+   [
+    5880,
+    "match",
+    2,
+    1
+   ],
+   [
+    5890,
+    "match",
+    2,
+    1
+   ],
+   [
+    5900,
+    "match",
+    2,
+    1
+   ],
+   [
+    5910,
+    "match",
+    2,
+    1
+   ],
+   [
+    5920,
+    "match",
+    2,
+    1
+   ],
+   [
+    5930,
+    "match",
+    2,
+    1
+   ],
+   [
+    5940,
+    "match",
+    2,
+    1
+   ],
+   [
+    5950,
+    "match",
+    2,
+    1
+   ],
+   [
+    5960,
+    "match",
+    2,
+    1
+   ],
+   [
+    5970,
+    "match",
+    2,
+    1
+   ],
+   [
+    5980,
+    "match",
+    2,
+    1
+   ],
+   [
+    5990,
+    "match",
+    2,
+    1
+   ],
+   [
+    6000,
+    "match",
+    2,
+    1
+   ],
+   [
+    6010,
+    "match",
+    2,
+    1
+   ],
+   [
+    6020,
+    "match",
+    2,
+    1
+   ],
+   [
+    6030,
+    "match",
+    2,
+    1
+   ],
+   [
+    6040,
+    "match",
+    2,
+    1
+   ],
+   [
+    6050,
+    "match",
+    2,
+    1
+   ],
+   [
+    6060,
+    "match",
+    2,
+    1
+   ],
+   [
+    6510,
+    "match",
+    7,
+    1
+   ],
+   [
+    6520,
+    "match",
+    7,
+    1
+   ],
+   [
+    6530,
+    "match",
+    7,
+    1
+   ],
+   [
+    6540,
+    "match",
+    7,
+    1
+   ],
+   [
+    6550,
+    "match",
+    7,
+    1
+   ],
+   [
+    6560,
+    "match",
+    7,
+    1
+   ],
+   [
+    6570,
+    "match",
+    7,
+    1
+   ],
+   [
+    6580,
+    "match",
+    7,
+    1
+   ],
+   [
+    6590,
+    "match",
+    7,
+    1
+   ],
+   [
+    6600,
+    "match",
+    7,
+    1
+   ],
+   [
+    6610,
+    "match",
+    7,
+    1
+   ],
+   [
+    6620,
+    "match",
+    7,
+    1
+   ],
+   [
+    6630,
+    "match",
+    7,
+    1
+   ],
+   [
+    6640,
+    "match",
+    7,
+    1
+   ],
+   [
+    6650,
+    "match",
+    7,
+    1
+   ],
+   [
+    6660,
+    "match",
+    7,
+    1
+   ],
+   [
+    6670,
+    "match",
+    7,
+    1
+   ],
+   [
+    6680,
+    "match",
+    7,
+    1
+   ],
+   [
+    6690,
+    "match",
+    7,
+    1
+   ],
+   [
+    6700,
+    "match",
+    7,
+    1
+   ],
+   [
+    6710,
+    "match",
+    7,
+    1
+   ],
+   [
+    6720,
+    "match",
+    7,
+    1
+   ],
+   [
+    6730,
+    "match",
+    7,
+    1
+   ],
+   [
+    6740,
+    "match",
+    7,
+    1
+   ],
+   [
+    6750,
+    "match",
+    7,
+    1
+   ],
+   [
+    6760,
+    "match",
+    7,
+    1
+   ],
+   [
+    6770,
+    "match",
+    7,
+    1
+   ],
+   [
+    6780,
+    "match",
+    7,
+    1
+   ],
+   [
+    6790,
+    "match",
+    7,
+    1
+   ],
+   [
+    6800,
+    "match",
+    7,
+    1
+   ],
+   [
+    6810,
+    "match",
+    7,
+    1
+   ],
+   [
+    6820,
+    "match",
+    7,
+    1
+   ],
+   [
+    6830,
+    "match",
+    7,
+    1
+   ],
+   [
+    6840,
+    "match",
+    7,
+    1
+   ],
+   [
+    6850,
+    "match",
+    7,
+    1
+   ],
+   [
+    6860,
+    "match",
+    7,
+    1
+   ],
+   [
+    6870,
+    "match",
+    7,
+    1
+   ],
+   [
+    6880,
+    "match",
+    7,
+    1
+   ],
+   [
+    6890,
+    "match",
+    7,
+    1
+   ],
+   [
+    6900,
+    "match",
+    7,
+    1
+   ]
+  ],
+  "incidents": [
+   {
+    "id": 1,
+    "started": 1790691000,
+    "ended": 1790691480,
+    "title": "Card payments failing: northpay outage",
+    "fix": "Moved card payments to quickcard until northpay recovered.",
+    "source": "on-call team",
+    "keys": 2,
+    "examples": 2
+   },
+   {
+    "id": 2,
+    "started": 1790703600,
+    "ended": 1790703960,
+    "title": "Login attack from a botnet",
+    "fix": "Turned on the per-IP sign-in limit and blocked the attacking network.",
+    "source": "on-call team",
+    "keys": 2,
+    "examples": 2
+   },
+   {
+    "id": 3,
+    "started": 1790715900,
+    "ended": 1790716320,
+    "title": "Search shard 3 lost its replica",
+    "fix": "Restarted search-2; shard 3 rebuilt in six minutes.",
+    "source": "on-call team",
+    "keys": 1,
+    "examples": 1
+   },
+   {
+    "id": 4,
+    "started": 1790735400,
+    "ended": 1790735880,
+    "title": "Checkout database pool exhausted",
+    "fix": "Stopped a runaway report query and raised the pool from 20 to 40 connections.",
+    "source": "on-call team",
+    "keys": 5,
+    "examples": 5
+   },
+   {
+    "id": 5,
+    "started": 1790748900,
+    "ended": 1790749260,
+    "title": "Recommendations cache down",
+    "fix": "Restarted cache-2 and cut the recommendations timeout to 150 ms.",
+    "source": "on-call team",
+    "keys": 2,
+    "examples": 2
+   },
+   {
+    "id": 6,
+    "started": 1790761800,
+    "ended": 1790762160,
+    "title": "Card payments failing: quickcard outage",
+    "fix": "Moved card payments to northpay until quickcard recovered.",
+    "source": "on-call team",
+    "keys": 2,
+    "examples": 2
+   },
+   {
+    "id": 7,
+    "started": 1790774050,
+    "ended": 1790774460,
+    "title": "Image CDN certificate expired",
+    "fix": "Renewed the certificate on the image CDN and turned on expiry alerts.",
+    "source": "on-call team",
+    "keys": 2,
+    "examples": 2
+   }
+  ],
+  "tables": [
+   {
+    "name": "_precomputing",
+    "bytes": 8192,
+    "rows": 4
+   },
+   {
+    "name": "_precomputing_objects",
+    "bytes": 8192,
+    "rows": 3
+   },
+   {
+    "name": "_precomputing_sources",
+    "bytes": 8192,
+    "rows": 1
+   },
+   {
+    "name": "_precomputing_templates",
+    "bytes": 8192,
+    "rows": 27
+   },
+   {
+    "name": "incident_keys",
+    "bytes": 8192,
+    "rows": 16
+   },
+   {
+    "name": "incidents",
+    "bytes": 8192,
+    "rows": 7
+   },
+   {
+    "name": "lines_raw",
+    "bytes": 2359296,
+    "rows": 19824
+   },
+   {
+    "name": "lines_raw_ts",
+    "bytes": 311296,
+    "rows": null
+   },
+   {
+    "name": "lines_win",
+    "bytes": 991232,
+    "rows": 25508
+   }
+  ],
+  "sqlite": "3.53.4",
+  "wallMs": 6576.170849000002
+ },
+ "trials": {
+  "known": 80,
+  "named": 80,
+  "wrong": 0,
+  "newKinds": 20,
+  "flagged": 20,
+  "falseAlarms": 0,
+  "delays": [
+   2,
+   3,
+   3,
+   3,
+   4,
+   4,
+   4,
+   5,
+   5,
+   5,
+   5,
+   6,
+   6,
+   6,
+   7,
+   7,
+   7,
+   8,
+   8,
+   8,
+   8,
+   9,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   13,
+   13,
+   13,
+   13,
+   14,
+   14,
+   14,
+   14,
+   15,
+   15,
+   15,
+   15,
+   15,
+   17,
+   19,
+   20,
+   21,
+   21,
+   21,
+   21,
+   22,
+   22,
+   25,
+   28,
+   28,
+   28,
+   29,
+   29,
+   30,
+   32,
+   34,
+   35,
+   36,
+   41,
+   50
+  ],
+  "checkMs": 57370.614243999844,
+  "checks": 14420,
+  "days": [
+   {
+    "seed": 1001,
+    "incidents": [
+     {
+      "key": "attack",
+      "at": 379,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 1395,
+      "known": false,
+      "detected": 15,
+      "named": null,
+      "newAt": 15,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "cache",
+      "at": 2605,
+      "known": true,
+      "detected": 15,
+      "named": 15,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 3698,
+      "known": true,
+      "detected": 22,
+      "named": 22,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 4927,
+      "known": true,
+      "detected": 3,
+      "named": 3,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1002,
+    "incidents": [
+     {
+      "key": "tls",
+      "at": 366,
+      "known": false,
+      "detected": 4,
+      "named": null,
+      "newAt": 4,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 1362,
+      "known": true,
+      "detected": 18,
+      "named": 28,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 2651,
+      "known": true,
+      "detected": 9,
+      "named": 29,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 3985,
+      "known": true,
+      "detected": 5,
+      "named": 5,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 5160,
+      "known": true,
+      "detected": 10,
+      "named": 10,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1003,
+    "incidents": [
+     {
+      "key": "search",
+      "at": 816,
+      "known": true,
+      "detected": 4,
+      "named": 4,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 1920,
+      "known": true,
+      "detected": 10,
+      "named": 10,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "cache",
+      "at": 2989,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 4200,
+      "known": true,
+      "detected": 10,
+      "named": 10,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 5291,
+      "known": false,
+      "detected": 19,
+      "named": null,
+      "newAt": 19,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1004,
+    "incidents": [
+     {
+      "key": "cache",
+      "at": 675,
+      "known": true,
+      "detected": 15,
+      "named": 15,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 1710,
+      "known": false,
+      "detected": 20,
+      "named": null,
+      "newAt": 20,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 2797,
+      "known": true,
+      "detected": 13,
+      "named": 13,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 4025,
+      "known": true,
+      "detected": 15,
+      "named": 15,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 5118,
+      "known": true,
+      "detected": 2,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1005,
+    "incidents": [
+     {
+      "key": "attack",
+      "at": 515,
+      "known": true,
+      "detected": 15,
+      "named": 15,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 1563,
+      "known": true,
+      "detected": 7,
+      "named": 7,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 2632,
+      "known": true,
+      "detected": 18,
+      "named": 28,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 3774,
+      "known": false,
+      "detected": 6,
+      "named": null,
+      "newAt": 6,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 5025,
+      "known": true,
+      "detected": 25,
+      "named": 25,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1006,
+    "incidents": [
+     {
+      "key": "search",
+      "at": 302,
+      "known": true,
+      "detected": 8,
+      "named": 8,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 1484,
+      "known": false,
+      "detected": 6,
+      "named": null,
+      "newAt": 6,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 2718,
+      "known": true,
+      "detected": 22,
+      "named": 22,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 3808,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 5037,
+      "known": true,
+      "detected": 3,
+      "named": 13,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1007,
+    "incidents": [
+     {
+      "key": "cache",
+      "at": 532,
+      "known": true,
+      "detected": 8,
+      "named": 8,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 1718,
+      "known": true,
+      "detected": 32,
+      "named": 32,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 2985,
+      "known": true,
+      "detected": 5,
+      "named": 5,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 4088,
+      "known": false,
+      "detected": 12,
+      "named": null,
+      "newAt": 12,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 5193,
+      "known": true,
+      "detected": 7,
+      "named": 7,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1008,
+    "incidents": [
+     {
+      "key": "payments:northpay",
+      "at": 810,
+      "known": true,
+      "detected": 20,
+      "named": 20,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 1990,
+      "known": true,
+      "detected": 10,
+      "named": 10,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 3243,
+      "known": false,
+      "detected": 7,
+      "named": null,
+      "newAt": 7,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 4409,
+      "known": true,
+      "detected": 21,
+      "named": 41,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 5598,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1009,
+    "incidents": [
+     {
+      "key": "attack",
+      "at": 403,
+      "known": true,
+      "detected": 7,
+      "named": 7,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "cache",
+      "at": 1450,
+      "known": true,
+      "detected": 10,
+      "named": 10,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 2650,
+      "known": true,
+      "detected": 20,
+      "named": 50,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 3920,
+      "known": false,
+      "detected": 10,
+      "named": null,
+      "newAt": 10,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 5047,
+      "known": true,
+      "detected": 3,
+      "named": 3,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1010,
+    "incidents": [
+     {
+      "key": "cache",
+      "at": 588,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 1839,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 2959,
+      "known": false,
+      "detected": 31,
+      "named": null,
+      "newAt": 31,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 4026,
+      "known": true,
+      "detected": 4,
+      "named": 4,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 5078,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1011,
+    "incidents": [
+     {
+      "key": "payments:northpay",
+      "at": 605,
+      "known": true,
+      "detected": 15,
+      "named": 15,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 1731,
+      "known": true,
+      "detected": 19,
+      "named": 19,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 3047,
+      "known": true,
+      "detected": 13,
+      "named": 13,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 4286,
+      "known": true,
+      "detected": 4,
+      "named": 4,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 5600,
+      "known": false,
+      "detected": 10,
+      "named": null,
+      "newAt": 10,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1012,
+    "incidents": [
+     {
+      "key": "dbpool",
+      "at": 647,
+      "known": true,
+      "detected": 3,
+      "named": 13,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 1691,
+      "known": true,
+      "detected": 19,
+      "named": 29,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "cache",
+      "at": 2969,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 4139,
+      "known": false,
+      "detected": 11,
+      "named": null,
+      "newAt": 11,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 5305,
+      "known": true,
+      "detected": 5,
+      "named": 5,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1013,
+    "incidents": [
+     {
+      "key": "payments:quickcard",
+      "at": 409,
+      "known": true,
+      "detected": 21,
+      "named": 21,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 1638,
+      "known": false,
+      "detected": 22,
+      "named": null,
+      "newAt": 22,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 2839,
+      "known": true,
+      "detected": 21,
+      "named": 21,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 4179,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 5450,
+      "known": true,
+      "detected": 10,
+      "named": 10,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1014,
+    "incidents": [
+     {
+      "key": "tls",
+      "at": 634,
+      "known": false,
+      "detected": 6,
+      "named": null,
+      "newAt": 6,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 1618,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 2766,
+      "known": true,
+      "detected": 14,
+      "named": 34,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 4066,
+      "known": true,
+      "detected": 4,
+      "named": 14,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "cache",
+      "at": 5129,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1015,
+    "incidents": [
+     {
+      "key": "tls",
+      "at": 495,
+      "known": false,
+      "detected": 5,
+      "named": null,
+      "newAt": 5,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 1595,
+      "known": true,
+      "detected": 25,
+      "named": 35,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 2861,
+      "known": true,
+      "detected": 9,
+      "named": 9,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "cache",
+      "at": 4113,
+      "known": true,
+      "detected": 17,
+      "named": 17,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 5119,
+      "known": true,
+      "detected": 21,
+      "named": 21,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1016,
+    "incidents": [
+     {
+      "key": "attack",
+      "at": 572,
+      "known": true,
+      "detected": 8,
+      "named": 8,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 1762,
+      "known": true,
+      "detected": 28,
+      "named": 28,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:northpay",
+      "at": 2886,
+      "known": true,
+      "detected": 14,
+      "named": 14,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 4052,
+      "known": true,
+      "detected": 8,
+      "named": 8,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 5246,
+      "known": false,
+      "detected": 14,
+      "named": null,
+      "newAt": 14,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1017,
+    "incidents": [
+     {
+      "key": "cache",
+      "at": 599,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 1786,
+      "known": false,
+      "detected": 24,
+      "named": null,
+      "newAt": 24,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 2814,
+      "known": true,
+      "detected": 6,
+      "named": 6,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 4044,
+      "known": true,
+      "detected": 6,
+      "named": 6,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "attack",
+      "at": 5248,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1018,
+    "incidents": [
+     {
+      "key": "attack",
+      "at": 424,
+      "known": true,
+      "detected": 6,
+      "named": 6,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 1398,
+      "known": true,
+      "detected": 2,
+      "named": 2,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 2517,
+      "known": false,
+      "detected": 23,
+      "named": null,
+      "newAt": 23,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 3649,
+      "known": true,
+      "detected": 21,
+      "named": 21,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 4926,
+      "known": true,
+      "detected": 4,
+      "named": 14,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1019,
+    "incidents": [
+     {
+      "key": "dbpool",
+      "at": 578,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 1750,
+      "known": true,
+      "detected": 20,
+      "named": 30,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "tls",
+      "at": 2975,
+      "known": false,
+      "detected": 5,
+      "named": null,
+      "newAt": 5,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "cache",
+      "at": 4018,
+      "known": true,
+      "detected": 12,
+      "named": 12,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 5089,
+      "known": true,
+      "detected": 11,
+      "named": 11,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   },
+   {
+    "seed": 1020,
+    "incidents": [
+     {
+      "key": "payments:northpay",
+      "at": 626,
+      "known": true,
+      "detected": 14,
+      "named": 14,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "payments:quickcard",
+      "at": 1834,
+      "known": true,
+      "detected": 26,
+      "named": 36,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "queue",
+      "at": 2957,
+      "known": false,
+      "detected": 13,
+      "named": null,
+      "newAt": 13,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "dbpool",
+      "at": 4035,
+      "known": true,
+      "detected": 5,
+      "named": 5,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     },
+     {
+      "key": "search",
+      "at": 5127,
+      "known": true,
+      "detected": 3,
+      "named": 3,
+      "newAt": null,
+      "wrong": 0,
+      "ok": true
+     }
+    ],
+    "falseAlarms": 0,
+    "alarms": []
+   }
+  ],
+  "median": 12,
+  "max": 50
+ }
+}

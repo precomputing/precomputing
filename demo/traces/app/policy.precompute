@@ -1,0 +1,52 @@
+# Agent traces, metered by the call. Every model call an AI agent makes is counted once, with its
+# tokens and its cost at example prices, and each call's input is split by where it came from:
+# the system prompt, the tool list, the task, the agent's earlier messages, or a tool's output.
+#
+# Prices, in billionths of a dollar per token (examples, not a provider's price list):
+# 400 for fresh input, 40 for input the provider serves from its prompt cache, 1,600 for output.
+
+stream calls exact {
+  id     call_id refuse repeats 7d            # a call reported twice counts once
+  key    repo text                            # the repository the agent works on
+  key    run text                             # the agent run
+  key    model text
+  value  input_tokens integer
+  value  cached_tokens integer                # input the provider had cached from the run's last call
+  value  output_tokens integer
+  derive cost_nano = (input_tokens - cached_tokens) * 400 + cached_tokens * 40 + output_tokens * 1600
+
+  period day close 24h                        # a day closes a day after it ends
+  raw    until closed + 30d                   # every call kept whole for 30 days after its day closes
+  rollup 1h keep 400d
+  rollup 1d keep forever
+}
+
+stream context exact {
+  id     part_id refuse repeats 7d            # one event per call and source
+  key    repo text
+  key    source text                          # system, tools, task, assistant, output, or tool:NAME
+  value  tokens integer                       # input tokens from this source
+  value  cached_tokens integer
+  value  output_tokens integer                # the reply, for the source output
+  derive cost_nano = (tokens - cached_tokens) * 400 + cached_tokens * 40 + output_tokens * 1600
+
+  period day close 24h
+  raw    until closed + 30d
+  rollup 1h keep 400d
+}
+
+precompute run_calls   = count(calls) by run
+precompute run_input   = sum(calls.input_tokens) by run
+precompute run_cached  = sum(calls.cached_tokens) by run
+precompute run_output  = sum(calls.output_tokens) by run
+precompute run_cost    = sum(calls.cost_nano) by run
+
+precompute repo_calls_day = count(calls) by repo per day
+precompute repo_cost_day  = sum(calls.cost_nano) by repo per day
+quota repo_budget = repo_cost_day                 # a budget per repository per day
+
+precompute model_cost_day = sum(calls.cost_nano) by model per day
+
+precompute source_tokens_day = sum(context.tokens) by source per day
+precompute source_cost_day   = sum(context.cost_nano) by source per day
+precompute repo_source_cost_day = sum(context.cost_nano) by repo, source per day

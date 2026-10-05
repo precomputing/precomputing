@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precomputing Meter Demo</title>
+<meta name="description" content="A month of AI usage from six customers, metered exactly by a compiled Precomputing policy in SQLite in your browser: retries counted once, late reports in the right hour, quotas, invoices to the nano-dollar and a month that closes.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://precomputing.com/demo/meter/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M12 25V8h6a4.5 4.5 0 0 1 0 9h-6' stroke='%2350C4CC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../lib/kit.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="/">Precomputing</a>
+    <span class="tag">Live demo: Meter</span>
+    <span class="grow"></span>
+    <a class="home" href="/demo/meter/">How to run it</a>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <p class="eyebrow">Answers ready before you ask</p>
+  <h1>A month of AI usage, metered to the token and billed in your browser</h1>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <noscript><p class="hint">This demo needs JavaScript switched on.</p></noscript>
+    <div class="row">
+      <button class="btn primary" id="btn-play" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path id="play-icon" d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <span id="play-label">Play</span>
+      </button>
+      <button class="btn" id="btn-stop" type="button" disabled title="Stop and go back to the start of the month">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span>Stop</span>
+      </button>
+      <button class="btn" id="btn-review" type="button" disabled title="Finish the month at full speed and show the results">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h11M4 12h8M4 18h6"/><path d="M14 17l3 3 5-6"/></svg>
+        <span class="long">Review the results</span><span class="short">Results</span>
+      </button>
+      <div class="progress" aria-label="Progress through the month">
+        <div class="bar"><i id="bar"></i></div>
+        <span class="pct" id="clock">Loading SQLite</span>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn small" id="btn-storm" type="button" disabled title="For the next hour every request is reported three times">Retry storm</button>
+      <button class="btn small warn" id="btn-cut" type="button" disabled title="The eu gateway loses its link to the meter for 12 hours">Cut the eu link</button>
+      <button class="btn small" id="btn-quota" type="button" disabled title="Juniper Bakery Blog is on the Free plan. Its quota can be raised once it is reached.">Raise Juniper's quota</button>
+    </div>
+    <p class="hint" id="hint" role="status">Loading SQLite and the compiled policy.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="counters" aria-live="off">
+    <div class="counter"><div class="n" id="c-metered">0</div><div class="l">requests metered</div></div>
+    <div class="counter"><div class="n" id="c-repeat">0</div><div class="l">retried reports refused</div></div>
+    <div class="counter good"><div class="n" id="c-revenue">$0.00</div><div class="l">September revenue so far</div></div>
+    <div class="counter good"><div class="n" id="c-margin">–</div><div class="l">gross margin after model costs</div></div>
+    <div class="counter"><div class="n" id="c-rate">–</div><div class="l">reports a second at full speed on this device</div></div>
+    <div class="counter"><div class="n" id="c-file">–</div><div class="l">the meter's file</div></div>
+  </div>
+
+  <section class="card">
+    <h2>Customers</h2>
+    <p class="sub" id="cust-sub">September so far, read from the meter as reports arrive. The quota bar is the monthly_tokens view, which the gateways read once a minute.</p>
+    <div class="custs" id="custs"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Requests an hour, by gateway</h2>
+      <p class="sub">From the meter's 1-hour windows. A late report lands in the hour its request happened, so a gap fills in when a link comes back.</p>
+      <div class="legend">
+        <span class="seg" role="group" aria-label="Time shown">
+          <button type="button" id="view-3d" aria-pressed="true" title="The last three days">3 days</button>
+          <button type="button" id="view-month" aria-pressed="false" title="The whole month">Month</button>
+        </span>
+        <span><i class="band" style="background:rgba(192,57,43,.2)"></i>Link to the meter down</span>
+        <span><i class="band" style="background:rgba(184,112,15,.3)"></i>Queue stuck</span>
+      </div>
+      <div class="chart" id="eu-chart"></div>
+      <div class="chart" id="us-chart"></div>
+      <p class="note">Each gateway on its own scale. Times are UTC. Hover or use the arrow keys for an hour's count.</p>
+    </section>
+    <section class="card">
+      <h2>What happened</h2>
+      <p class="sub">Newest first.</p>
+      <ul class="log wide" id="log"></ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Gateways</h2>
+      <p class="sub">Each gateway serves its customers and reports every request to the meter. A client may retry through either one.</p>
+      <div class="table-wrap">
+        <table id="gateways">
+          <thead><tr><th>Gateway</th><th>Link to the meter</th><th class="num">Delivered</th><th class="num">Waiting</th><th class="num">Retries</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note">Delivered and waiting count reports to the meter. A client that gets no answer in time sends the same request again, with the same request id, and the retry may land on the other gateway. eu serves Juniper, Northgate and Harbor; us serves Quarry, Maple and Sundial.</p>
+    </section>
+    <section class="card">
+      <h2>What the meter refused</h2>
+      <p class="sub">Every refused report is counted in usage_refused, by reason, customer, model and gateway.</p>
+      <div class="table-wrap">
+        <table id="refused">
+          <thead><tr><th>Reason</th><th>What it means</th><th class="num">Reports</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note" id="away-note"></p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2 id="inv-title">September invoices, so far</h2>
+    <p class="sub" id="inv-sub">Read from the meter's precomputes and the price list with one SQL view, in billionths of a dollar, and rounded to the cent only here.</p>
+    <div class="table-wrap">
+      <table id="invoices">
+        <thead><tr><th>Customer</th><th>Plan</th><th class="num">Requests</th><th class="num">Tokens in</th><th class="num">Tokens out</th><th class="num">List price</th><th class="num">Discount</th><th class="num">Due</th><th class="num">Model cost</th><th class="num">Margin</th></tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
+    <p class="note">Example list prices per million tokens, in and out: small $0.30 and $1.20, medium $2.50 and $10, large $12 and $48. Pro pays list, Enterprise 25% less, Free nothing. Model cost is half of list. Customers and prices are invented.</p>
+  </section>
+
+  <section class="card" id="policy-card">
+    <h2>The policy</h2>
+    <p class="sub">A short policy says what to count and when a month closes. The compiler turns it into the SQL this page runs; the billing tables sit next to it in the same file.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-policy" aria-selected="true">Policy</button>
+      <button type="button" role="tab" id="tab-sql" aria-selected="false">Compiled SQL</button>
+      <button type="button" role="tab" id="tab-billing" aria-selected="false">Billing SQL</button>
+      <button type="button" role="tab" id="tab-compiler" aria-selected="false">Try the compiler</button>
+    </div>
+    <pre class="code" id="code"></pre>
+    <div id="compiler" hidden>
+      <p class="muted">Change the policy and compile it with the real compiler, built for the browser (about 1.3 MB to download). The running demo keeps its own policy.</p>
+      <textarea id="compiler-src" spellcheck="false" aria-label="Policy to compile"></textarea>
+      <div class="row"><button class="btn small primary" id="compiler-run" type="button">Compile</button><span class="muted" id="compiler-status"></span></div>
+      <pre class="code" id="compiler-out" hidden></pre>
+    </div>
+  </section>
+
+  <section class="section" id="results" hidden>
+    <h2>Results</h2>
+    <p id="finishing"><span class="spin"></span> Finishing the month at full speed, then checking every invoice.</p>
+    <div id="results-body" hidden>
+      <div class="callout" id="results-summary"></div>
+      <div class="card">
+        <h2>Every invoice, checked</h2>
+        <p class="sub">The meter against a recount: separate code that takes the gateways' reports in the order they were sent and applies the policy's three rules itself. It never reads the meter.</p>
+        <div class="table-wrap"><table id="checks"></table></div>
+        <p class="note" id="checks-note"></p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h2>After the dispute window</h2>
+          <p class="sub">The policy keeps every September request until 90 days after the close, so any invoice line can be disputed and checked request by request. Here is a copy of the file fast-forwarded to that day and distilled.</p>
+          <div id="dispute"></div>
+        </div>
+        <div class="card">
+          <h2>What is in the file</h2>
+          <div class="table-wrap"><table id="file-tables"></table></div>
+          <p class="note" id="file-note"></p>
+          <div class="row" id="download-row"><button class="btn small" id="btn-download" type="button">Download the file</button><span class="muted">Opens in any SQLite tool.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ask">
+    <h2>Ask the meter</h2>
+    <p>The meter is a plain SQLite file, with the billing tables beside it. Pick a question or write your own, then press Run (or Ctrl+Enter, ⌘+Enter on a Mac). It reads while the month is paused or finished.</p>
+    <div class="presets" id="presets"></div>
+    <textarea id="sql-text" spellcheck="false" aria-label="SQL query"></textarea>
+    <div class="row"><button class="btn small primary" id="sql-run" type="button" disabled>Run</button><span class="muted" id="sql-status"></span></div>
+    <div class="sql-out" id="sql-out" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <div class="wrap">Precomputing 0.1.1 with SQLite <span id="sqlite-version">3</span>, running in this page. Nothing is sent anywhere.</div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precomputing Traces Demo</title>
+<meta name="description" content="A day of AI coding-agent runs kept by Precomputing in your browser: every message stored once by its SHA-256, any call rebuilt byte for byte, secrets masked before storage, and exact cost by run, repository and tool, with daily budgets.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://precomputing.com/demo/traces/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M12 25V8h6a4.5 4.5 0 0 1 0 9h-6' stroke='%2350C4CC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../lib/kit.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="/">Precomputing</a>
+    <span class="tag">Live demo: Traces</span>
+    <span class="grow"></span>
+    <a class="home" href="/demo/traces/">How to run it</a>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <p class="eyebrow">Answers ready before you ask</p>
+  <h1>A day of coding-agent calls, each piece kept once and every call metered, in your browser</h1>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <noscript><p class="hint">This demo needs JavaScript switched on.</p></noscript>
+    <div class="row">
+      <button class="btn primary" id="btn-play" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path id="play-icon" d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <span id="play-label">Play</span>
+      </button>
+      <button class="btn" id="btn-stop" type="button" disabled title="Stop and go back to 07:00">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span>Stop</span>
+      </button>
+      <button class="btn" id="btn-review" type="button" disabled title="Finish the day at full speed and show the results">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h11M4 12h8M4 18h6"/><path d="M14 17l3 3 5-6"/></svg>
+        <span class="long">Review the results</span><span class="short">Results</span>
+      </button>
+      <div class="progress" aria-label="Progress through the day">
+        <div class="bar"><i id="bar"></i></div>
+        <span class="pct" id="clock">Loading SQLite</span>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn small" id="btn-again" type="button" disabled title="The tracer sends the latest finished run a second time, as a retried upload would">Report a run again</button>
+      <button class="btn small" id="btn-raise" type="button" disabled title="Once a repository has spent its budget, raise it to $1.00 for the day">Raise the budget</button>
+    </div>
+    <p class="hint" id="hint" role="status">Loading SQLite, the Engine and the day's runs.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="counters" aria-live="off">
+    <div class="counter"><div class="n" id="c-calls">0</div><div class="l">model calls kept</div></div>
+    <div class="counter"><div class="n" id="c-sent">0 B</div><div class="l">the calls as sent</div></div>
+    <div class="counter good"><div class="n" id="c-kept">0 B</div><div class="l">the same calls in the file</div></div>
+    <div class="counter good"><div class="n" id="c-cost">$0.00</div><div class="l">spent today, at example prices</div></div>
+    <div class="counter"><div class="n" id="c-masked">0</div><div class="l">secrets masked before storage</div></div>
+    <div class="counter"><div class="n" id="c-repeat">0</div><div class="l">calls reported twice, refused</div></div>
+  </div>
+
+  <section class="card">
+    <h2>Every call as sent, and what the file keeps</h2>
+    <p class="sub">An agent sends the whole conversation again with every call, so a run's 40th call repeats its first 39. The store keeps each message and the tool list once, under the SHA-256 of its bytes, and each call as the list of its pieces.</p>
+    <div class="compare" id="bytes"></div>
+    <p class="note" id="bytes-note"></p>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Spend by repository, against the day's budget</h2>
+      <p class="sub">Read from repo_budget, the policy's quota view. A gateway in front of the agents reads it before letting a run's next call through.</p>
+      <div class="budgets" id="budgets"></div>
+      <p class="note" id="budgets-note"></p>
+    </section>
+    <section class="card">
+      <h2>What happened</h2>
+      <p class="sub">Newest first.</p>
+      <ul class="log wide" id="log"></ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Where the input comes from</h2>
+      <p class="sub">Each call's input split by source, from the precomputes source_tokens_day and source_cost_day: the system prompt, the tool list, the task, the agent's own earlier messages, or the output of a tool.</p>
+      <div class="bars sources" id="sources"></div>
+      <p class="note">Each row shows cost, then input tokens. Replies are what the model wrote. Cost counts cached input at a tenth of the fresh price, so a source that repeats in every call costs less than its tokens suggest.</p>
+    </section>
+    <section class="card">
+      <h2>Runs, the costliest first</h2>
+      <p class="sub">From the precomputes run_calls, run_input, run_cached, run_output and run_cost.</p>
+      <div class="table-wrap">
+        <table id="runs">
+          <thead><tr><th>Run and repository</th><th class="num">Calls</th><th class="num">Cost</th><th class="num">Input</th><th class="num">Cached</th><th class="num">Output</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note">Tokens. Cached is the input the provider served from its prompt cache: all of the run's previous call, when that call was sent less than five minutes before.</p>
+    </section>
+  </div>
+
+  <section class="card" id="rebuild-card">
+    <h2>Rebuild a call from the file</h2>
+    <p class="sub">Pick a finished run and one of its calls. The page reads the call back with the trace_requests view, SQL alone, and compares it with the request as the agent sent it, which it builds on its own from the day's runs.</p>
+    <div class="row rb-row">
+      <label class="field" for="rb-run"><strong>Run</strong> <select id="rb-run" disabled><option>No run has finished yet</option></select></label>
+      <label class="field" for="rb-seq"><strong>Call</strong> <input id="rb-seq" type="number" min="1" value="1" disabled></label>
+      <button class="btn small primary" id="rb-go" type="button" disabled>Rebuild</button>
+      <span class="muted" id="rb-status"></span>
+    </div>
+    <div id="rb-out"></div>
+  </section>
+
+  <section class="card" id="policy-card">
+    <h2>The policy</h2>
+    <p class="sub">Two exact streams meter the calls: one event for each call, and one for each source of its input. The store's own tables sit beside them in the same file and go in with the same checkpoints.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-policy" aria-selected="true">Policy</button>
+      <button type="button" role="tab" id="tab-sql" aria-selected="false">Compiled SQL</button>
+      <button type="button" role="tab" id="tab-store" aria-selected="false">The store's tables</button>
+      <button type="button" role="tab" id="tab-secrets" aria-selected="false">Secrets it masks</button>
+    </div>
+    <pre class="code" id="code"></pre>
+  </section>
+
+  <section class="section" id="results" hidden>
+    <h2>Results</h2>
+    <p id="finishing"><span class="spin"></span> Finishing the day at full speed, then rebuilding every call and recounting every cost.</p>
+    <div id="results-body" hidden>
+      <div class="callout" id="results-summary"></div>
+      <div class="card">
+        <h2>Every call and every cost, checked</h2>
+        <p class="sub">The file against the day's runs. The page builds every request as the agent sent it and works out every call's tokens and cost on its own, from the runs and the policy's prices. It never reads the file for that.</p>
+        <ul class="checks" id="checks"></ul>
+        <p class="note" id="checks-note"></p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h2>The budget alert</h2>
+          <div id="alert-out"></div>
+        </div>
+        <div class="card">
+          <h2>What is in the file</h2>
+          <div class="table-wrap"><table id="file-tables"></table></div>
+          <p class="note" id="file-note"></p>
+          <div class="row" id="download-row"><button class="btn small" id="btn-download" type="button">Download the file</button><span class="muted">Opens in any SQLite tool.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ask">
+    <h2>Ask the file</h2>
+    <p>The store and the meter are one plain SQLite file. Pick a question or write your own, then press Run (or Ctrl+Enter, ⌘+Enter on a Mac). It reads while the day is paused or finished.</p>
+    <div class="presets" id="presets"></div>
+    <textarea id="sql-text" spellcheck="false" aria-label="SQL query"></textarea>
+    <div class="row"><button class="btn small primary" id="sql-run" type="button" disabled>Run</button><span class="muted" id="sql-status"></span></div>
+    <div class="sql-out" id="sql-out" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <div class="wrap">Precomputing <span id="pc-version">0.1.1</span> with SQLite <span id="sqlite-version">3</span>, running in this page. Nothing is sent anywhere. <span id="data-credit"></span></div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

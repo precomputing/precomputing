@@ -1,0 +1,65 @@
+# Made by precomputing import from the dashboard "Web shop".
+# Each stream from logs keeps some of its panels ready; edit freely.
+
+logs {
+  format "<timestamp> <level> <service> <message>"
+}
+
+# Every line: kept whole on site for 48 hours, counted per template, and one example of
+# each template every ten minutes to send upstream.
+stream lines from logs {
+  key    service text
+  key    level text
+  key    template integer
+  raw    keep 48h
+  rollup 1m keep 30d
+  rollup 10m keep 30d
+  samples 1 per 10m
+}
+
+# Errors: whole lines, up to five a minute of each kind, to send upstream.
+stream errors from logs where level = "ERROR" {
+  key    service text
+  key    template integer
+  rollup 1m keep 30d
+  samples 5 per 1m
+}
+
+# "Requests a minute by route": count
+stream web_by_route from logs where service = "web" {
+  key    route text
+  rollup 1m keep 30d
+}
+
+# "p95 latency by route": p95 of ms
+stream web_ms_by_route from logs where service = "web" {
+  key    route text
+  value  ms real
+  rollup 1m keep 30d quantiles ms
+  anomalies ms log z > 4 keep 5 per 1m
+}
+
+# "Errors a minute by service": count
+stream error_by_service from logs where level = "ERROR" {
+  key    service text
+  rollup 1m keep 30d
+}
+
+# "Payments by provider and result": count
+stream payments_by_provider_result from logs where service = "payments" {
+  key    provider text
+  key    result text
+  rollup 1m keep 30d
+}
+
+# "Revenue a minute": sum of total
+stream checkout_total from logs where service = "checkout" {
+  value  total real
+  rollup 1m keep 30d
+}
+
+# "Top searches": top 10 by count
+stream search_by_q from logs where service = "search" {
+  key    q text
+  rollup 1m keep 30d
+}

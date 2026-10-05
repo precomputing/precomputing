@@ -1,0 +1,41 @@
+# A test policy for the log reducer: every line kept, counts per template, latency by route,
+# payments by result, and errors kept whole.
+logs {
+  format "<timestamp> <level> <service> <message>"
+  mask   "[0-9a-f]{8}-[0-9a-f]{4}"
+}
+
+stream lines from logs {
+  key    service text
+  key    level text
+  key    template integer
+  raw    keep 48h
+  rollup 1m keep 30d
+  rollup 10m keep 30d
+  samples 1 per 10m
+}
+
+stream web from logs where service = "web" {
+  key    route text
+  value  ms real
+  rollup 1m keep 30d quantiles ms
+  anomalies ms log z > 4 warmup 200 keep 5 per 1m
+}
+
+stream payments from logs where service = "payments" {
+  key    provider text
+  key    result text
+  value  amount real
+  derive cents = amount * 100
+  rollup 1m keep 30d
+}
+
+stream errors from logs where level = "ERROR" {
+  key    service text
+  key    template integer
+  rollup 1m keep 30d
+  samples 3 per 1m
+}
+
+precompute requests = count(web) by route per day
+precompute revenue  = sum(payments.amount) by provider per day

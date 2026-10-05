@@ -1,0 +1,19 @@
+# API latency for a small web service: the policy behind Demo 1.
+# Every request is one event: when it happened, which endpoint, how long it took.
+
+stream latency {
+  key   endpoint text
+  value ms real
+
+  raw     keep 5m                        # recent requests stay whole for five minutes
+  rollup  10s keep 24h                   # then 10-second summaries for a day
+  rollup  1m  keep 30d  quantiles ms     # 1-minute summaries with p99 for a month
+  rollup  1h  keep 1y   quantiles ms     # hourly summaries for a year
+
+  samples 3 per 1m                       # three whole requests kept from every minute
+  anomalies ms log z > 4 keep 20 per 1m  # unusually slow or fast requests kept whole
+}
+
+precompute requests = count(latency) by endpoint
+precompute avg_ms   = avg(latency.ms) by endpoint
+precompute p99_ms   = p99(latency.ms) by endpoint

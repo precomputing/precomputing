@@ -1,0 +1,324 @@
+{
+ "lines": 281164,
+ "rawBytes": 25505435,
+ "sentBytes": 212306,
+ "sentEvents": 7896,
+ "batches": 124,
+ "engineMs": 6192.625451000034,
+ "fileBytes": 39796736,
+ "rawRows": 281164,
+ "templates": 19,
+ "checks": [
+  {
+   "points": 840,
+   "same": 840,
+   "worst": 0
+  },
+  {
+   "points": 840,
+   "same": 840,
+   "worst": 0.009992705452127533
+  },
+  {
+   "points": 128,
+   "same": 128,
+   "worst": 0
+  },
+  {
+   "points": 647,
+   "same": 647,
+   "worst": 0
+  },
+  {
+   "points": 120,
+   "same": 120,
+   "worst": 0
+  },
+  {
+   "points": 4496,
+   "same": 4496,
+   "worst": 0
+  }
+ ],
+ "tops": [
+  {
+   "i": 5,
+   "sent": [
+    [
+     "rain-jacket",
+     7874
+    ],
+    [
+     "running-shoes",
+     3951
+    ],
+    [
+     "tent",
+     2655
+    ],
+    [
+     "wool-socks",
+     1872
+    ],
+    [
+     "backpack",
+     1666
+    ],
+    [
+     "headlamp",
+     1245
+    ],
+    [
+     "sleeping-bag",
+     1151
+    ],
+    [
+     "water-bottle",
+     996
+    ],
+    [
+     "hiking-boots",
+     887
+    ],
+    [
+     "fleece",
+     805
+    ]
+   ],
+   "raw": [
+    [
+     "rain-jacket",
+     7874
+    ],
+    [
+     "running-shoes",
+     3951
+    ],
+    [
+     "tent",
+     2655
+    ],
+    [
+     "wool-socks",
+     1872
+    ],
+    [
+     "backpack",
+     1666
+    ],
+    [
+     "headlamp",
+     1245
+    ],
+    [
+     "sleeping-bag",
+     1151
+    ],
+    [
+     "water-bottle",
+     996
+    ],
+    [
+     "hiking-boots",
+     887
+    ],
+    [
+     "fleece",
+     805
+    ]
+   ]
+  }
+ ],
+ "alerts": [
+  {
+   "service": "checkout",
+   "level": "WARN",
+   "text": "order failed order=<*> reason=<*>",
+   "n": 1,
+   "firstTs": 1790685601,
+   "lastTs": 1790685601,
+   "example": "2026-09-29T12:40:01.540Z WARN  checkout order failed order=A-13077 reason=payment_error",
+   "id": 17,
+   "first": 2401,
+   "sent": 2405,
+   "caughtAfter": 4
+  },
+  {
+   "service": "payments",
+   "level": "ERROR",
+   "text": "charge failed provider=<*> result=<*> status=<*> amount=<*>",
+   "n": 1,
+   "firstTs": 1790685603,
+   "lastTs": 1790685603,
+   "example": "2026-09-29T12:40:03.011Z ERROR payments charge failed provider=northpay result=error status=503 amount=149.47",
+   "id": 18,
+   "first": 2403,
+   "sent": 2405,
+   "caughtAfter": 2
+  }
+ ],
+ "search": {
+  "text": "northpay",
+  "n": 4792,
+  "ms": 86.19108699999924
+ },
+ "tables": [
+  {
+   "name": "_precomputing",
+   "bytes": 8192,
+   "rows": 4
+  },
+  {
+   "name": "_precomputing_objects",
+   "bytes": 8192,
+   "rows": 21
+  },
+  {
+   "name": "_precomputing_sources",
+   "bytes": 8192,
+   "rows": 1
+  },
+  {
+   "name": "_precomputing_templates",
+   "bytes": 8192,
+   "rows": 19
+  },
+  {
+   "name": "checkout_total_raw",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "checkout_total_win",
+   "bytes": 24576,
+   "rows": 120
+  },
+  {
+   "name": "error_by_service_raw",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "error_by_service_win",
+   "bytes": 8192,
+   "rows": 128
+  },
+  {
+   "name": "errors_raw",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "errors_sample",
+   "bytes": 81920,
+   "rows": 604
+  },
+  {
+   "name": "errors_win",
+   "bytes": 8192,
+   "rows": 128
+  },
+  {
+   "name": "lines_raw",
+   "bytes": 33095680,
+   "rows": 281164
+  },
+  {
+   "name": "lines_raw_ts",
+   "bytes": 4161536,
+   "rows": null
+  },
+  {
+   "name": "lines_sample",
+   "bytes": 32768,
+   "rows": 200
+  },
+  {
+   "name": "lines_win",
+   "bytes": 106496,
+   "rows": 2190
+  },
+  {
+   "name": "payments_by_provider_result_raw",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "payments_by_provider_result_win",
+   "bytes": 40960,
+   "rows": 647
+  },
+  {
+   "name": "search_by_q_raw",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "search_by_q_win",
+   "bytes": 172032,
+   "rows": 4496
+  },
+  {
+   "name": "web_by_route_raw",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "web_by_route_win",
+   "bytes": 40960,
+   "rows": 840
+  },
+  {
+   "name": "web_ms_by_route_anomaly",
+   "bytes": 8192,
+   "rows": 2
+  },
+  {
+   "name": "web_ms_by_route_base",
+   "bytes": 8192,
+   "rows": 7
+  },
+  {
+   "name": "web_ms_by_route_ms_sk",
+   "bytes": 1769472,
+   "rows": 61115
+  },
+  {
+   "name": "web_ms_by_route_raw",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "web_ms_by_route_win",
+   "bytes": 90112,
+   "rows": 840
+  }
+ ],
+ "incident": {
+  "from": 2400,
+  "to": 2880,
+  "provider": "northpay"
+ },
+ "deploy": {
+  "at": 3900
+ },
+ "sqlite": "3.53.4",
+ "wallMs": 8494.476592,
+ "news": [
+  {
+   "t": 2401,
+   "kind": "red",
+   "text": "Alert, 4 s after its first line: a new WARN line in checkout, “order failed order=<*> reason=<*>”."
+  },
+  {
+   "t": 2403,
+   "kind": "red",
+   "text": "Alert, 2 s after its first line: a new ERROR line in payments, “charge failed provider=<*> result=<*> status=<*> amount=<*>”."
+  },
+  {
+   "t": 3900,
+   "kind": "amber",
+   "text": "A new DEBUG line in search: “ranking batch=<*> candidates=<*> features=<*> took_us=<*>”. Counted as a template of its own; not an alert."
+  }
+ ]
+}

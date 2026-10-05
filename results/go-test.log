@@ -1,0 +1,18 @@
+# go vet ./... and go test -count=1 ./... on go1.24.7, 5 October 2026
+go vet: done
+ok  	precomputing.com/precomputing/cmd/precomputing	0.262s
+ok  	precomputing.com/precomputing/compile	0.005s
+?   	precomputing.com/precomputing/engine	[no test files]
+ok  	precomputing.com/precomputing/engine/sqlitestore	29.844s
+ok  	precomputing.com/precomputing/internal/drain	0.009s
+?   	precomputing.com/precomputing/internal/filecmp	[no test files]
+ok  	precomputing.com/precomputing/internal/market	0.281s
+ok  	precomputing.com/precomputing/internal/sqlite	0.006s
+?   	precomputing.com/precomputing/internal/version	[no test files]
+ok  	precomputing.com/precomputing/logs	1.903s
+ok  	precomputing.com/precomputing/mcp	3.987s
+ok  	precomputing.com/precomputing/policy	0.004s
+?   	precomputing.com/precomputing/tools/crashlab	[no test files]
+?   	precomputing.com/precomputing/tools/filecompare	[no test files]
+?   	precomputing.com/precomputing/tools/logbits	[no test files]
+ok  	precomputing.com/precomputing/traces	2.323s

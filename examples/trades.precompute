@@ -1,0 +1,29 @@
+# Stock trades turned into candles: the policy behind Demo 2.
+# A candle is a window summary: open, high, low and close are the first,
+# maximum, minimum and last price, volume is size_sum, and VWAP is
+# notional_sum / size_sum.
+
+stream trades {
+  key    symbol text
+  value  price real
+  value  size  integer
+  derive notional = price * size
+
+  raw     keep 5m                     # every trade stays whole for five minutes
+  rollup  1s keep 1h                  # 1-second candles for an hour
+  rollup  1m keep 90d                 # 1-minute candles for 90 days
+  rollup  1h keep forever             # hourly candles for good
+
+  # A price jump: a step from the previous trade far outside the usual steps.
+  anomalies price log change z > 6 memory 500 warmup 200 keep 5 per 1m
+}
+
+# The quote board, kept ready.
+precompute last_price   = last(trades.price) by symbol
+precompute day_open     = first(trades.price) by symbol per day
+precompute day_high     = max(trades.price) by symbol per day
+precompute day_low      = min(trades.price) by symbol per day
+precompute day_volume   = sum(trades.size) by symbol per day
+precompute day_turnover = sum(trades.notional) by symbol per day
+precompute day_trades   = count(trades) by symbol per day
+precompute trades_total = count(trades)

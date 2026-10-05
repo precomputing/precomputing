@@ -1,0 +1,28 @@
+# AI usage metering: the policy behind Demo 3.
+# Every request to a model is one event, sent by the gateway that carried it.
+# Invoice lines are precomputes; a month closes a day after it ends.
+
+stream usage exact {
+  id     request_id refuse repeats 7d     # a retried request is counted once
+  key    customer text
+  key    model text
+  key    gateway text
+  value  input_tokens integer
+  value  output_tokens integer
+  derive tokens = input_tokens + output_tokens
+
+  late   48h                              # up to two days late still counts, in the month it happened,
+  period month close 24h                  # unless that month has closed: a month closes a day after it ends
+  raw    until closed + 90d               # every request kept until its month has been closed 90 days
+  rollup 1h keep 400d
+  rollup 1d keep forever
+}
+
+# Invoice lines: per customer and model, per month.
+precompute requests_month = count(usage) by customer, model per month
+precompute input_month    = sum(usage.input_tokens) by customer, model per month
+precompute output_month   = sum(usage.output_tokens) by customer, model per month
+
+# What each customer's plan limits: tokens a month.
+precompute tokens_month   = sum(usage.tokens) by customer per month
+quota monthly_tokens = tokens_month

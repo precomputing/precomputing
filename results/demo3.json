@@ -1,0 +1,363 @@
+{
+ "served": 366118,
+ "servedSept": 350967,
+ "billed": 350339,
+ "notBilled": {
+  "closed": 628,
+  "late": 0,
+  "repeat": 0,
+  "never": 0
+ },
+ "meterSept": 350339,
+ "rawRows": 350339,
+ "rawDistinct": 350339,
+ "reports": 373351,
+ "ingestMs": 21509.826695999993,
+ "lines": 12,
+ "recountDiffs": 0,
+ "rawDiffs": 0,
+ "invoices": [
+  {
+   "customer": "sundial",
+   "name": "Sundial Research",
+   "plan": "enterprise",
+   "requests": 150790,
+   "input_tokens": 234069673,
+   "output_tokens": 92405125,
+   "list_nano": 3454874403100,
+   "discount_nano": 863718600775,
+   "due_nano": 2591155802325,
+   "due_cents": 259116,
+   "cost_nano": 1727437201550,
+   "ok": true
+  },
+  {
+   "customer": "harbor",
+   "name": "Harbor Legal Drafts",
+   "plan": "pro",
+   "requests": 39586,
+   "input_tokens": 99873977,
+   "output_tokens": 37356271,
+   "list_nano": 2374674473500,
+   "discount_nano": 0,
+   "due_nano": 2374674473500,
+   "due_cents": 237467,
+   "cost_nano": 1187337236750,
+   "ok": true
+  },
+  {
+   "customer": "quarry",
+   "name": "Quarry Road Media",
+   "plan": "pro",
+   "requests": 93120,
+   "input_tokens": 121620192,
+   "output_tokens": 50462787,
+   "list_nano": 683481418800,
+   "discount_nano": 0,
+   "due_nano": 683481418800,
+   "due_cents": 68348,
+   "cost_nano": 341740709400,
+   "ok": true
+  },
+  {
+   "customer": "maple",
+   "name": "Maple Grove Travel",
+   "plan": "pro",
+   "requests": 61126,
+   "input_tokens": 56295382,
+   "output_tokens": 23428080,
+   "list_nano": 155251075600,
+   "discount_nano": 0,
+   "due_nano": 155251075600,
+   "due_cents": 15525,
+   "cost_nano": 77625537800,
+   "ok": true
+  },
+  {
+   "customer": "juniper",
+   "name": "Juniper Bakery Blog",
+   "plan": "free",
+   "requests": 4264,
+   "input_tokens": 3520373,
+   "output_tokens": 1479936,
+   "list_nano": 6520159100,
+   "discount_nano": 6520159100,
+   "due_nano": 0,
+   "due_cents": 0,
+   "cost_nano": 3260079550,
+   "ok": true
+  },
+  {
+   "customer": "northgate",
+   "name": "Northgate Tutors",
+   "plan": "free",
+   "requests": 1453,
+   "input_tokens": 1106136,
+   "output_tokens": 459207,
+   "list_nano": 882889200,
+   "discount_nano": 882889200,
+   "due_nano": 0,
+   "due_cents": 0,
+   "cost_nano": 441444600,
+   "ok": true
+  }
+ ],
+ "amountDiffs": 0,
+ "due": "5804562770225",
+ "cost": "3337842209650",
+ "list": "6675684419300",
+ "refusedRows": 32,
+ "refusedDiffs": 0,
+ "refused": {
+  "repeat": 7219,
+  "late": 0,
+  "closed": 642
+ },
+ "stuck": {
+  "n": 642,
+  "closed": 642,
+  "late": 0,
+  "repeat": 0
+ },
+ "afterMidnight": {
+  "n": 25,
+  "counted": 25
+ },
+ "away": [
+  {
+   "id": "juniper",
+   "sept": 672,
+   "reachedAt": 1790496480
+  },
+  {
+   "id": "northgate",
+   "sept": 0,
+   "reachedAt": null
+  },
+  {
+   "id": "harbor",
+   "sept": 0,
+   "reachedAt": null
+  },
+  {
+   "id": "quarry",
+   "sept": 0,
+   "reachedAt": null
+  },
+  {
+   "id": "maple",
+   "sept": 0,
+   "reachedAt": null
+  },
+  {
+   "id": "sundial",
+   "sept": 0,
+   "reachedAt": null
+  }
+ ],
+ "invoiceMs": 0.5660990799999854,
+ "rawInvoiceMs": 263.43441600000006,
+ "slowOk": true,
+ "quotaUs": 5.732152999999926,
+ "hourRows": 8215,
+ "hourDiffs": 0,
+ "fileBytes": 25321472,
+ "tablesNow": [
+  {
+   "name": "_pc_usage_by_customer_model_per_month",
+   "bytes": 8192,
+   "rows": 24
+  },
+  {
+   "name": "_pc_usage_by_customer_per_month",
+   "bytes": 8192,
+   "rows": 12
+  },
+  {
+   "name": "_precomputing",
+   "bytes": 8192,
+   "rows": 4
+  },
+  {
+   "name": "_precomputing_objects",
+   "bytes": 8192,
+   "rows": 7
+  },
+  {
+   "name": "customers",
+   "bytes": 8192,
+   "rows": 6
+  },
+  {
+   "name": "model_costs",
+   "bytes": 8192,
+   "rows": 3
+  },
+  {
+   "name": "monthly_tokens_limit",
+   "bytes": 8192,
+   "rows": 5
+  },
+  {
+   "name": "plans",
+   "bytes": 8192,
+   "rows": 3
+  },
+  {
+   "name": "prices",
+   "bytes": 8192,
+   "rows": 3
+  },
+  {
+   "name": "usage_clock",
+   "bytes": 8192,
+   "rows": 1
+  },
+  {
+   "name": "usage_ids",
+   "bytes": 1556480,
+   "rows": 79370
+  },
+  {
+   "name": "usage_ids_ts",
+   "bytes": 1556480,
+   "rows": null
+  },
+  {
+   "name": "usage_raw",
+   "bytes": 15663104,
+   "rows": 365490
+  },
+  {
+   "name": "usage_raw_ts",
+   "bytes": 5406720,
+   "rows": null
+  },
+  {
+   "name": "usage_refused",
+   "bytes": 8192,
+   "rows": 32
+  },
+  {
+   "name": "usage_win",
+   "bytes": 999424,
+   "rows": 8596
+  }
+ ],
+ "laterBytes": 1916928,
+ "tablesLater": [
+  {
+   "name": "_pc_usage_by_customer_model_per_month",
+   "bytes": 8192,
+   "rows": 24
+  },
+  {
+   "name": "_pc_usage_by_customer_per_month",
+   "bytes": 8192,
+   "rows": 12
+  },
+  {
+   "name": "_precomputing",
+   "bytes": 8192,
+   "rows": 4
+  },
+  {
+   "name": "_precomputing_objects",
+   "bytes": 8192,
+   "rows": 7
+  },
+  {
+   "name": "customers",
+   "bytes": 8192,
+   "rows": 6
+  },
+  {
+   "name": "model_costs",
+   "bytes": 8192,
+   "rows": 3
+  },
+  {
+   "name": "monthly_tokens_limit",
+   "bytes": 8192,
+   "rows": 5
+  },
+  {
+   "name": "plans",
+   "bytes": 8192,
+   "rows": 3
+  },
+  {
+   "name": "prices",
+   "bytes": 8192,
+   "rows": 3
+  },
+  {
+   "name": "usage_clock",
+   "bytes": 8192,
+   "rows": 1
+  },
+  {
+   "name": "usage_ids",
+   "bytes": 8192,
+   "rows": 0
+  },
+  {
+   "name": "usage_ids_ts",
+   "bytes": 8192,
+   "rows": null
+  },
+  {
+   "name": "usage_raw",
+   "bytes": 663552,
+   "rows": 15151
+  },
+  {
+   "name": "usage_raw_ts",
+   "bytes": 212992,
+   "rows": null
+  },
+  {
+   "name": "usage_refused",
+   "bytes": 8192,
+   "rows": 32
+  },
+  {
+   "name": "usage_win",
+   "bytes": 901120,
+   "rows": 8596
+  }
+ ],
+ "laterSame": true,
+ "laterRaw": 0,
+ "laterOct": 15151,
+ "disputeEnd": 1798675200,
+ "sqlite": "3.53.4",
+ "wallMs": 23114.39469,
+ "news": [
+  {
+   "t": 1260000,
+   "kind": "teal",
+   "text": "The eu link is back after 6 hours. The gateway delivers the 625 reports it held, and each request counts in the hour it happened. Of those reports, 29 had already reached the meter as retries through the us gateway and were refused as repeats."
+  },
+  {
+   "t": 2275680,
+   "kind": "amber",
+   "text": "Juniper Bakery Blog reaches its Free quota of 5 million tokens for the month. The eu gateway turns its requests away."
+  },
+  {
+   "t": 2592000,
+   "kind": "teal",
+   "text": "A new month: Juniper Bakery Blog's quota starts again, and the gateway serves it."
+  },
+  {
+   "t": 2598000,
+   "kind": "teal",
+   "text": "The eu gateway has caught up. 25 September requests reported after midnight counted in September, when they happened."
+  },
+  {
+   "t": 2696400,
+   "kind": "red",
+   "text": "The stuck us queue is emptied: 642 reports of requests made between 18:00 and 19:00 on 30 September. September closed at midnight, so the meter refuses them all and counts them in usage_refused. The September invoices do not change."
+  }
+ ]
+}

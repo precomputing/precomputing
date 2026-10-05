@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precomputing Déjà Vu Demo</title>
+<meta name="description" content="Two hours of a web shop's logs in your browser, checked every ten seconds against every incident the team wrote down: what stands out, which past incident it looks like and what fixed it, from one SQLite file.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://precomputing.com/demo/dejavu/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M12 25V8h6a4.5 4.5 0 0 1 0 9h-6' stroke='%2350C4CC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../lib/kit.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="/">Precomputing</a>
+    <span class="tag">Live demo: Incident déjà vu</span>
+    <span class="grow"></span>
+    <a class="home" href="/demo/dejavu/">How to run it</a>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <p class="eyebrow">Answers ready before you ask</p>
+  <h1>When trouble starts, the file says what it looks like and what fixed it last time</h1>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <noscript><p class="hint">This demo needs JavaScript switched on.</p></noscript>
+    <div class="row">
+      <button class="btn primary" id="btn-play" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path id="play-icon" d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <span id="play-label">Play</span>
+      </button>
+      <button class="btn" id="btn-stop" type="button" disabled title="Stop and go back to 12:00">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span>Stop</span>
+      </button>
+      <button class="btn" id="btn-review" type="button" disabled title="Finish the two hours at full speed and show the results">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h11M4 12h8M4 18h6"/><path d="M14 17l3 3 5-6"/></svg>
+        <span class="long">Review the results</span><span class="short">Results</span>
+      </button>
+      <div class="progress" aria-label="Progress through the two hours">
+        <div class="bar"><i id="bar"></i></div>
+        <span class="pct" id="clock">Loading SQLite, the Engine and yesterday's file</span>
+      </div>
+    </div>
+    <div class="row">
+      <label class="field" for="kind">Start an incident
+        <select id="kind">
+          <option value="payments:northpay">Card payments failing at northpay</option>
+          <option value="payments:quickcard">Card payments failing at quickcard</option>
+          <option value="attack">Login attack</option>
+          <option value="search">Search shard lost</option>
+          <option value="dbpool">Database pool exhausted</option>
+          <option value="cache">Recommendations cache down</option>
+          <option value="tls">Image CDN certificate expired</option>
+          <option value="queue" selected>Order queue out of disk (never seen)</option>
+        </select>
+      </label>
+      <button class="btn small warn" id="btn-start" type="button" disabled>Start it now</button>
+    </div>
+    <p class="hint" id="hint" role="status">Loading SQLite, the Engine and yesterday's file.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="counters" aria-live="off">
+    <div class="counter"><div class="n" id="c-lines">0</div><div class="l">lines today, on 24 hours of history</div></div>
+    <div class="counter"><div class="n" id="c-templates">–</div><div class="l">templates</div></div>
+    <div class="counter"><div class="n" id="c-incidents">–</div><div class="l">incidents written down</div></div>
+    <div class="counter"><div class="n" id="c-checks">0</div><div class="l">checks, one every 10 seconds</div></div>
+    <div class="counter good"><div class="n" id="c-check-ms">–</div><div class="l">a check takes, on average</div></div>
+    <div class="counter"><div class="n" id="c-rate">–</div><div class="l">lines a second at full speed on this device</div></div>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Right now</h2>
+      <div class="status quiet" id="status" aria-live="polite">
+        <div class="st-head" id="st-head">Loading</div>
+        <div class="st-body" id="st-body"></div>
+      </div>
+      <p class="sub" id="fp-sub">What stands out: templates at least three times above or below their usual minute, and at least six lines a minute apart.</p>
+      <div class="table-wrap">
+        <table id="fp">
+          <thead><tr><th>Template</th><th class="num">Now, a minute</th><th class="num">Usual</th><th class="num">Change</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <h2>The closest incidents in the file</h2>
+      <p class="sub">Each written-down incident keeps the fingerprint of its first two minutes. The file compares it with now, by the cosine of the two fingerprints.</p>
+      <div class="matches" id="matches"></div>
+      <form class="labelform" id="label-form" hidden>
+        <h3>Write it down</h3>
+        <p class="sub" id="label-what"></p>
+        <label for="label-title">What was it?</label>
+        <input id="label-title" type="text" maxlength="120" autocomplete="off" placeholder="What went wrong, in a few words">
+        <label for="label-fix">What fixed it?</label>
+        <input id="label-fix" type="text" maxlength="300" autocomplete="off" placeholder="What you did, so next time it goes faster">
+        <div class="row"><button class="btn small primary" id="label-save" type="submit">Write it down</button><span class="muted" id="label-status"></span></div>
+      </form>
+    </section>
+  </div>
+
+  <section class="section" id="day">
+    <h2>The two hours</h2>
+    <p>Above, what happened to the shop. Below, what the file said at each check: looks like an incident in the file, partly like one, or like nothing in it.</p>
+    <div class="chart timeline" id="timeline" aria-label="Incidents and what the file said, across the two hours"></div>
+    <div class="legend" id="tl-legend">
+      <span><i class="fill" style="background:var(--red)"></i>An incident</span>
+      <span><i class="fill" style="background:var(--teal)"></i>Looks like one in the file</span>
+      <span><i class="fill" style="background:var(--amber)"></i>Partly like one</span>
+      <span><i class="fill" style="background:var(--violet)"></i>Like nothing in the file</span>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>What happened</h2>
+      <p class="sub">Newest first.</p>
+      <ul class="log tall" id="log"></ul>
+    </section>
+    <section class="card">
+      <h2>Warnings and errors, as they are written</h2>
+      <p class="sub">The newest first. Every line goes into the file and stays there for ten minutes; the counts stay for days.</p>
+      <div class="loglines" id="tail" aria-live="off"></div>
+    </section>
+  </div>
+
+  <section class="card" id="incidents-card">
+    <h2>The incidents in the file</h2>
+    <p class="sub">What the on-call team wrote down, and anything you write down here. Its fingerprint is saved beside it, so it outlives the week the minute counts are kept.</p>
+    <div class="table-wrap">
+      <table id="incidents">
+        <thead><tr><th class="num">#</th><th>Began</th><th>What it was</th><th>What fixed it</th><th>By</th><th class="num">Templates</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="results" hidden>
+    <h2>Results</h2>
+    <p id="finishing"><span class="spin"></span> Finishing the two hours at full speed, then checking every count.</p>
+    <div id="results-body" hidden>
+      <div class="callout" id="results-summary"></div>
+      <div class="card">
+        <h2>Every incident today</h2>
+        <p class="sub">When each one began, when it first stood out and what the file said. A kind seen before counts when it is named right; a new kind counts when it is flagged as new. Either way it must never be named wrong.</p>
+        <div class="table-wrap"><table id="outcomes"></table></div>
+        <p class="note" id="outcomes-note"></p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h2>Every count, checked</h2>
+          <p class="sub">The lines a minute and an hour for each service and level, from the file, against a recount of the lines by separate code that never reads it.</p>
+          <div class="table-wrap"><table id="counts-check"></table></div>
+          <p class="note" id="counts-note"></p>
+        </div>
+        <div class="card">
+          <h2>What is in the file</h2>
+          <div class="table-wrap"><table id="file-tables"></table></div>
+          <p class="note" id="file-note"></p>
+          <div class="row" id="download-row"><button class="btn small" id="btn-download" type="button">Download the file</button><span class="muted">Opens in any SQLite tool.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ask">
+    <h2>Ask the file</h2>
+    <p>Everything above is read from one SQLite file: yesterday's counts, the incidents and today's lines as they arrive. Pick a question or write your own, then press Run (or Ctrl+Enter, ⌘+Enter on a Mac). It reads while the run is paused or finished.</p>
+    <div class="presets" id="presets"></div>
+    <textarea id="sql-text" spellcheck="false" aria-label="SQL query"></textarea>
+    <div class="row"><button class="btn small primary" id="sql-run" type="button" disabled>Run</button><span class="muted" id="sql-status"></span></div>
+    <div class="sql-out" id="sql-out" aria-live="polite"></div>
+  </section>
+
+  <section class="card" id="policy-card">
+    <h2>The policy and the comparison</h2>
+    <p class="sub">The policy counts every template by service and level, a minute at a time for a week and an hour at a time for 90 days, and keeps every line for ten minutes. The comparison is plain SQL beside it.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-policy" aria-selected="true">Policy</button>
+      <button type="button" role="tab" id="tab-dejavu" aria-selected="false">The comparison</button>
+      <button type="button" role="tab" id="tab-sql" aria-selected="false">Compiled SQL</button>
+    </div>
+    <pre class="code" id="code"></pre>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <div class="wrap">Precomputing <span id="pc-version">0.1.1</span> log reducer and Engine, built for the browser, with SQLite <span id="sqlite-version">3</span>, running in this page. The shop, its lines and its incidents are invented. Nothing is sent anywhere.</div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

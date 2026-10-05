@@ -1,0 +1,194 @@
+{
+  "sqlite": "3.53.4",
+  "trades": 4048210,
+  "wallMs": 17763,
+  "engineMs": 12196,
+  "engineTradesPerSec": 331921,
+  "checkpoints": 51,
+  "checkpointMs": 7035,
+  "fileBytes": 9961472,
+  "plainBytes": 114743760,
+  "reduction": 11.518755461040296,
+  "candlesChecked": 27150,
+  "candleDiffs": 0,
+  "byRes": {
+    "1": {
+      "candles": 24000,
+      "diffs": 0
+    },
+    "60": {
+      "candles": 3102,
+      "diffs": 0
+    },
+    "3600": {
+      "candles": 48,
+      "diffs": 0
+    }
+  },
+  "quoteDiffs": 0,
+  "tradesTotal": 4048210,
+  "sourceSeq": 4048210,
+  "sourceEvents": 4048210,
+  "rawRows": 124303,
+  "rawDiffs": 0,
+  "alerts": [
+    {
+      "ts": 1790620265,
+      "symbol": "SIM6",
+      "price": 136.48,
+      "before": 145.22,
+      "z": -610
+    },
+    {
+      "ts": 1790611800,
+      "symbol": "SIM8",
+      "price": 51.03,
+      "before": 52.88,
+      "z": -231
+    },
+    {
+      "ts": 1790607737,
+      "symbol": "SIM4",
+      "price": 25.02,
+      "before": 23.15,
+      "z": 239
+    }
+  ],
+  "plugs": [
+    {
+      "by": "script",
+      "t": 13717,
+      "lost": 62016,
+      "cutRows": 12939,
+      "resent": 62016,
+      "openMs": 62,
+      "recoverMs": 280,
+      "checked": 25263,
+      "diffs": 0
+    }
+  ],
+  "tables": [
+    {
+      "name": "trades_win",
+      "bytes": 4636672,
+      "rows": 31974
+    },
+    {
+      "name": "trades_raw",
+      "bytes": 3670016,
+      "rows": 124303
+    },
+    {
+      "name": "trades_raw_ts",
+      "bytes": 1859584,
+      "rows": null
+    },
+    {
+      "name": "trades_base",
+      "bytes": 8192,
+      "rows": 8
+    },
+    {
+      "name": "trades_anomaly",
+      "bytes": 8192,
+      "rows": 3
+    },
+    {
+      "name": "_precomputing_sources",
+      "bytes": 8192,
+      "rows": 1
+    },
+    {
+      "name": "_precomputing_objects",
+      "bytes": 8192,
+      "rows": 11
+    },
+    {
+      "name": "_precomputing",
+      "bytes": 8192,
+      "rows": 4
+    },
+    {
+      "name": "_pc_trades_by_symbol_per_day",
+      "bytes": 8192,
+      "rows": 8
+    },
+    {
+      "name": "_pc_trades_by_symbol",
+      "bytes": 8192,
+      "rows": 8
+    },
+    {
+      "name": "_pc_trades",
+      "bytes": 8192,
+      "rows": 1
+    }
+  ],
+  "race": {
+    "trades": 200332,
+    "engineMs": 632,
+    "sqlMs": 9272,
+    "engineRate": 317092,
+    "sqlRate": 21606,
+    "speedup": 14.676004473553492,
+    "tables": [
+      {
+        "name": "_pc_trades",
+        "rows": 1,
+        "values": 2,
+        "diffs": 0
+      },
+      {
+        "name": "_pc_trades_by_symbol",
+        "rows": 8,
+        "values": 32,
+        "diffs": 0
+      },
+      {
+        "name": "_pc_trades_by_symbol_per_day",
+        "rows": 8,
+        "values": 72,
+        "diffs": 0
+      },
+      {
+        "name": "_precomputing",
+        "rows": 4,
+        "values": 8,
+        "diffs": 0
+      },
+      {
+        "name": "_precomputing_objects",
+        "rows": 11,
+        "values": 44,
+        "diffs": 0
+      },
+      {
+        "name": "trades_anomaly",
+        "rows": 0,
+        "values": 0,
+        "diffs": 0
+      },
+      {
+        "name": "trades_base",
+        "rows": 8,
+        "values": 40,
+        "diffs": 0
+      },
+      {
+        "name": "trades_raw",
+        "rows": 118705,
+        "values": 474820,
+        "diffs": 0
+      },
+      {
+        "name": "trades_win",
+        "rows": 4048,
+        "values": 101200,
+        "diffs": 0
+      }
+    ],
+    "identical": true,
+    "rows": 122793,
+    "values": 576218
+  }
+}

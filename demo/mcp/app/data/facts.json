@@ -1,0 +1,129 @@
+{
+ "files": [
+  {
+   "name": "latency",
+   "demo": 1,
+   "title": "API traffic (Demo 1)",
+   "fadeAt": 1790683200,
+   "when": "a day after its three hours",
+   "fullBytes": 4481024,
+   "fadedBytes": 2785280,
+   "gzBytes": 554677,
+   "fadedAtIso": "2026-09-29T12:00:00.000Z"
+  },
+  {
+   "name": "trades",
+   "demo": 2,
+   "title": "A trading day (Demo 2)",
+   "fadeAt": 1790629200,
+   "when": "an hour after the close",
+   "fullBytes": 9961472,
+   "fadedBytes": 589824,
+   "gzBytes": 248060,
+   "fadedAtIso": "2026-09-28T21:00:00.000Z"
+  },
+  {
+   "name": "usage",
+   "demo": 3,
+   "title": "A month of AI usage (Demo 3)",
+   "fadeAt": 1798675200,
+   "when": "on 31 December, when September's dispute window ends",
+   "fullBytes": 25321472,
+   "fadedBytes": 1916928,
+   "gzBytes": 828193,
+   "fadedAtIso": "2026-12-31T00:00:00.000Z"
+  },
+  {
+   "name": "shop",
+   "demo": 4,
+   "title": "A web shop's logs (Demo 4)",
+   "fadeAt": 1790863200,
+   "when": "two days after its two hours",
+   "fullBytes": 39796736,
+   "fadedBytes": 2310144,
+   "gzBytes": 490657,
+   "fadedAtIso": "2026-10-01T14:00:00.000Z"
+  }
+ ],
+ "questions": {
+  "latency": {
+   "raw": {
+    "events": 35907,
+    "bytes": 1134563,
+    "what": "every request to /api/checkout from 10:00 to 11:00 UTC, as CSV lines of ts, endpoint and ms"
+   },
+   "exact": {
+    "n": 35907,
+    "avg": 153.05215278357892,
+    "min": 38.03,
+    "max": 2354.24,
+    "first": 127.04,
+    "last": 217.89,
+    "p50": 122.45,
+    "p95": 265.24,
+    "p99": 905.5
+   }
+  },
+  "trades": {
+   "raw": {
+    "events": 1497,
+    "bytes": 38808,
+    "what": "SIM4's trades from 10:30 to 10:31 New York time, as CSV lines of ts, symbol, price and size"
+   },
+   "exact": {
+    "n": 1497,
+    "open": 23.36,
+    "high": 23.37,
+    "low": 23.33,
+    "close": 23.36,
+    "volume": 522174,
+    "notional": 12193128.609999996,
+    "vwap": 23.35070036041625
+   }
+  },
+  "usage": {
+   "raw": {
+    "events": 39586,
+    "bytes": 1762642,
+    "what": "Harbor Legal Drafts' September requests, as CSV lines of ts, request_id, customer, model, gateway, input_tokens and output_tokens"
+   },
+   "exact": {
+    "requests": 39586,
+    "input_tokens": 99873977,
+    "output_tokens": 37356271,
+    "list_nano": "2374674473500",
+    "due_nano": "2374674473500",
+    "due_cents": 237467,
+    "cost_nano": "1187337236750",
+    "recountOk": true
+   }
+  },
+  "shop": {
+   "raw": {
+    "events": 202271,
+    "bytes": 18381738,
+    "what": "every log line the shop wrote from 12:40 to 14:00 UTC"
+   },
+   "exact": {
+    "kinds": 19,
+    "fresh": [
+     {
+      "kind": "WARN checkout order failed",
+      "first": "2026-09-29T12:40:01.540Z",
+      "lines": 214
+     },
+     {
+      "kind": "ERROR payments charge failed",
+      "first": "2026-09-29T12:40:03.011Z",
+      "lines": 355
+     },
+     {
+      "kind": "DEBUG search ranking",
+      "first": "2026-09-29T13:05:00.327Z",
+      "lines": 46734
+     }
+    ]
+   }
+  }
+ }
+}

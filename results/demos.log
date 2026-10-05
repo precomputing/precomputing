@@ -1,0 +1,104 @@
+== demo1
+[53.6 s, exit 0] node tools/run-demo1.mjs --json --db build/verify/latency.sqlite
+== demo2
+[31.1 s, exit 0] node tools/run-demo2.mjs --json --db build/verify/trades.sqlite
+== demo3
+[23.3 s, exit 0] node tools/run-demo3.mjs --json --csv build/verify/reports.csv --db build/verify/usage-sql.db
+== demo3 native
+[2.0 s, exit 0] sh -c build/precomputing put --policy examples/usage.precompute --seq build/verify/usage-engine.db < build/verify/reports.csv > build/verify/put3.log 2>&1
+precomputing: 373351 lines, 365490 events applied, 0 skipped as already applied, 7861 refused by the stream, 0 not read, 6 checkpoints
+== demo3 compare
+9 tables, 453536 rows, 2949652 values, 0 differences
+[2.2 s, exit 0] sh -c build/filecompare -skip customers,model_costs,plans,prices,monthly_tokens_limit build/verify/usage-engine.db build/verify/usage-sql.db | tail -1
+== demo3 triggers in native SQLite
+SQLite 3.45.1: 373351 reports in 10.71 s, 34,874 a second; 365490 counted, 7861 refused
+[11.2 s, exit 0] python3 tools/meter-triggers.py build/precomputing build/verify/reports.csv build/verify/usage-triggers.db
+== demo4
+[8.8 s, exit 0] node tools/run-demo4.mjs --json --lines build/verify/shop.log --db build/verify/shop-wasm.db
+== demo4 native
+[1.7 s, exit 0] sh -c build/precomputing put --lines --policy examples/shop.precompute build/verify/shop-native.db < build/verify/shop.log > build/verify/put4.log 2>&1
+precomputing: 281164 log lines, 618023 events applied, 0 lines already in the file, 0 not read, 19 templates, 9 checkpoints
+== demo4 compare
+24 tables, 352525 rows, 1794042 values, 1 differences
+[1.5 s, exit 0] sh -c build/filecompare build/verify/shop-native.db build/verify/shop-wasm.db | tail -1
+== demo5
+[30.4 s, exit 0] node tools/run-demo5.mjs --json --lines build/verify/wiki.jsonl --db build/verify/wiki-wasm.db
+== demo5 native
+[2.7 s, exit 0] sh -c build/precomputing put --format json --policy examples/wikipedia.precompute build/verify/wiki-native.db < build/verify/wiki.jsonl > build/verify/put5.log 2>&1
+precomputing: 212301 lines, 212301 events applied, 0 skipped as already applied, 0 refused by the stream, 0 not read, 18 checkpoints
+== demo5 compare
+10 tables, 119668 rows, 1596566 values, 0 differences
+[0.9 s, exit 0] sh -c build/filecompare build/verify/wiki-native.db build/verify/wiki-wasm.db | tail -1
+== demo6
+[173.1 s, exit 0] node tools/run-demo6.mjs --json --history --trials 20 --lines build/verify/dejavu.log --db build/verify/dejavu-wasm.db
+== demo6 native
+[7.7 s, exit 0] sh -c build/precomputing put --lines --policy examples/dejavu.precompute build/verify/dejavu-native.db < build/verify/dejavu.log > build/verify/put6.log 2>&1
+precomputing: 2375957 log lines, 2375957 events applied, 0 lines already in the file, 0 not read, 27 templates, 47 checkpoints
+== demo6 compare
+5 tables, 45366 rows, 328955 values, 1 differences
+[0.2 s, exit 0] sh -c build/filecompare -skip incidents,incident_keys build/verify/dejavu-native.db build/verify/dejavu-wasm.db | tail -1
+== demo7 files
+latency: 4481024 bytes at the end of the run, 2785280 faded a day after its three hours, 554677 compressed
+trades: 9961472 bytes at the end of the run, 589824 faded an hour after the close, 248060 compressed
+usage: 25321472 bytes at the end of the run, 1916928 faded on 31 December, when September's dispute window ends, 828193 compressed
+shop: 39796736 bytes at the end of the run, 2310144 faded two days after its two hours, 490657 compressed
+latency: raw 35907 events, 1134563 bytes {"n":35907,"avg":153.05215278357892,"min":38.03,"max":2354.24,"first":127.04,"last":217.89,"p50":122.45,"p95":265.24,"p99":905.5}
+trades: raw 1497 events, 38808 bytes {"n":1497,"open":23.36,"high":23.37,"low":23.33,"close":23.36,"volume":522174,"notional":12193128.609999996,"vwap":23.35070036041625}
+usage: raw 39586 events, 1762642 bytes {"requests":39586,"input_tokens":99873977,"output_tokens":37356271,"list_nano":"2374674473500","due_nano":"2374674473500","due_cents":237467,"cost_nano":"1187337236750","recountOk":true}
+shop: raw 202271 events, 18381738 bytes {"kinds":19,"fresh":[{"kind":"WARN checkout order failed","first":"2026-09-29T12:40:01.540Z","lines":214},{"kind":"ERROR payments charge failed","first":"2026-09-29T12:40:03.011Z","lines":355},{"kind":"DEBUG search ranking","first":"2026-09-29T13:05:00.327Z","lines":46734}]}
+[3.3 s, exit 0] node tools/mcp-files.mjs build/verify
+== demo7
+[0.9 s, exit 0] node tools/run-demo7.mjs --json --native build/precomputing
+: 1790863200,
+   "when": "two days after its two hours",
+   "fullBytes": 39796736,
+   "fadedBytes": 2310144,
+   "gzBytes": 490657,
+   "fadedAtIso": "2026-10-01T14:00:00.000Z"
+  }
+ ],
+ "sqlite": "3.53.4",
+ "wallMs": 414.62507200000005,
+ "native": {
+  "compared": 15,
+  "differ": 0,
+  "diffs": []
+ }
+}
+== mcp clients
+[0.5 s, exit 0] node tools/mcp-check.mjs build/precomputing build/verify/latency.sqlite --json
+[0.7 s, exit 0] node tools/mcp-check.mjs build/precomputing build/verify/trades.sqlite --json
+[0.7 s, exit 0] node tools/mcp-check.mjs build/precomputing build/verify/usage.sqlite --json
+[0.6 s, exit 0] node tools/mcp-check.mjs build/precomputing build/verify/shop.sqlite --json
+== demo8
+[3.1 s, exit 0] node tools/run-demo8.mjs --json --db build/verify/traces-wasm.db --native build/precomputing
+": [
+   "100 runs, 2045 calls kept, 20 reported again and refused, 4 secrets masked",
+   "requests as sent 90.9 MB; kept as 4092 new pieces, 4.5 MB",
+   "cost in the file $1.46, at the policy's prices"
+  ],
+  "compare": "19 tables, 40043 rows, 231641 values, 0 differences",
+  "identical": true
+ }
+}
+== demo8 native
+[0.5 s, exit 0] sh -c build/precomputing traces --policy examples/traces.precompute --again generated-0066 build/verify/traces-native.db < demo/traces/app/data/day.jsonl.gz > build/verify/traces-native.log
+[0.6 s, exit 0] sh -c build/precomputing traces --policy examples/traces.precompute --again generated-0066 build/verify/traces-native.db < demo/traces/app/data/day.jsonl.gz > build/verify/traces-native.log
+[0.5 s, exit 0] sh -c build/precomputing traces --policy examples/traces.precompute --again generated-0066 build/verify/traces-native.db < demo/traces/app/data/day.jsonl.gz > build/verify/traces-native.log
+100 runs, 2045 calls kept, 20 reported again and refused, 4 secrets masked
+requests as sent 90.9 MB; kept as 4092 new pieces, 4.5 MB
+cost in the file $1.46, at the policy's prices
+== demo8 rebuild
+e7acd6054e92a8097d4d4f534c1a4c4ed6df6b888ae6f210446a8871f755fa0d  -
+== all runners done
+
+# Demo 6 again, after the file of the day before (demo/dejavu/app/history.db.gz) was rebuilt with 0.1.1
+== demo6
+[171.6 s, exit 0] node tools/run-demo6.mjs --json --history --trials 20 --lines build/verify/dejavu.log --db build/verify/dejavu-wasm.db
+== demo6 native
+[7.8 s, exit 0] sh -c build/precomputing put --lines --policy examples/dejavu.precompute build/verify/dejavu-native.db < build/verify/dejavu.log > build/verify/put6.log 2>&1
+precomputing: 2375957 log lines, 2375957 events applied, 0 lines already in the file, 0 not read, 27 templates, 49 checkpoints
+== demo6 compare
+5 tables, 45366 rows, 328955 values, 0 differences
+[0.2 s, exit 0] sh -c build/filecompare -skip incidents,incident_keys build/verify/dejavu-native.db build/verify/dejavu-wasm.db | tail -1
+== demo6 rerun done

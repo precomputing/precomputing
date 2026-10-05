@@ -1,0 +1,17 @@
+# Incident deja vu: the policy behind Demo 6.
+# Every log line is counted per template, a minute at a time for a week and an hour at a time
+# for 90 days, and kept whole for ten minutes. The comparison with the incidents written down
+# is plain SQL beside the policy's tables (demo/dejavu/app/dejavu.sql).
+
+logs {
+  format "<timestamp> <level> <service> <message>"
+}
+
+stream lines from logs {
+  key    service text
+  key    level text
+  key    template integer
+  raw    keep 10m
+  rollup 1m keep 7d
+  rollup 1h keep 90d
+}

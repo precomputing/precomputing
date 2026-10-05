@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precomputing MCP Demo</title>
+<meta name="description" content="An AI agent's questions to the four Precomputing demos' files over MCP, answered in your browser by the same server code as precomputing serve. Each answer is a few hundred tokens; the raw data behind it runs to hundreds of thousands.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://precomputing.com/demo/mcp/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M12 25V8h6a4.5 4.5 0 0 1 0 9h-6' stroke='%2350C4CC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../lib/kit.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="/">Precomputing</a>
+    <span class="tag">Live demo: MCP</span>
+    <span class="grow"></span>
+    <a class="home" href="/demo/mcp/">How to run it</a>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <p class="eyebrow">Answers ready before you ask</p>
+  <h1>An AI agent asks the four demos' files, and each answer costs a few hundred tokens</h1>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <noscript><p class="hint">This demo needs JavaScript switched on.</p></noscript>
+    <div class="row">
+      <button class="btn primary" id="btn-ask" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <span class="long">Ask the four questions</span><span class="short">Ask all four</span>
+      </button>
+      <button class="btn" id="btn-reset" type="button" disabled title="Clear the answers and start again">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span>Start again</span>
+      </button>
+      <div class="progress" aria-label="Loading and asking">
+        <div class="bar"><i id="bar"></i></div>
+        <span class="pct" id="status">Loading</span>
+      </div>
+    </div>
+    <p class="hint" id="hint" role="status">Loading SQLite, the MCP server and the four files, about 2 MB.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="counters" aria-live="off">
+    <div class="counter"><div class="n" id="c-calls">0</div><div class="l">tool calls</div></div>
+    <div class="counter good"><div class="n" id="c-answer">0</div><div class="l">tokens in the answers</div></div>
+    <div class="counter"><div class="n" id="c-describe">0</div><div class="l">tokens reading what each file keeps</div></div>
+    <div class="counter"><div class="n" id="c-raw">0</div><div class="l">tokens the raw data would take</div></div>
+    <div class="counter good"><div class="n" id="c-ratio">–</div><div class="l">fewer tokens than the raw data</div></div>
+    <div class="counter"><div class="n" id="c-checks">–</div><div class="l">checks against the raw events</div></div>
+  </div>
+
+  <section class="card">
+    <h2>Four files, four MCP servers</h2>
+    <p class="sub">Each demo's own file, as its policy leaves it once the detail it keeps for a short while has faded. Each gets its own server: the Go code of <code>precomputing serve</code>, built for WebAssembly and running in this page. The agent reads each file's description once.</p>
+    <div class="table-wrap">
+      <table id="files">
+        <thead><tr><th>Server</th><th>The file</th><th>As it stands</th><th class="num">Size</th><th class="num">Description</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <pre class="code" id="describe-out" hidden></pre>
+  </section>
+
+  <div id="questions"></div>
+
+  <section class="section" id="results" hidden>
+    <h2>Results</h2>
+    <div class="callout" id="results-summary"></div>
+    <div class="card">
+      <h2>Every answer, checked</h2>
+      <p class="sub">Each answer against the facts: separate code that counts the raw events themselves, from the demos' own event generators, the requests the Meter kept whole and the invoices its recount checked. It never reads a precomputed answer.</p>
+      <div class="table-wrap"><table id="checks"></table></div>
+      <p class="note" id="checks-note"></p>
+    </div>
+  </section>
+
+  <section class="section" id="try">
+    <h2>Make a call yourself</h2>
+    <p>Pick a server and a tool, change the arguments, and press Run (or Ctrl+Enter, ⌘+Enter on a Mac). Under <em>Any message</em> you can send your own JSON-RPC message and headers, mistakes included, and see what the server says.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-tool" aria-selected="true">A tool call</button>
+      <button type="button" role="tab" id="tab-any" aria-selected="false">Any message</button>
+    </div>
+    <div id="pane-tool">
+      <div class="row">
+        <label class="field">Server <select id="try-server"></select></label>
+        <label class="field">Tool <select id="try-tool"></select></label>
+      </div>
+      <textarea id="try-args" spellcheck="false" aria-label="Arguments, as JSON"></textarea>
+    </div>
+    <div id="pane-any" hidden>
+      <div class="row"><label class="field">Server <select id="any-server"></select></label></div>
+      <textarea id="any-headers" spellcheck="false" aria-label="HTTP headers, one per line" class="short-box"></textarea>
+      <textarea id="any-body" spellcheck="false" aria-label="The JSON-RPC message"></textarea>
+    </div>
+    <div class="row"><button class="btn small primary" id="try-run" type="button" disabled>Run</button><span class="muted" id="try-status"></span></div>
+    <div id="try-out"></div>
+  </section>
+
+  <section class="section" id="session">
+    <h2>A recorded session with a real agent</h2>
+    <p id="session-intro">Loading the recording.</p>
+    <div id="session-body"></div>
+  </section>
+
+  <section class="section" id="connect">
+    <h2>How an agent connects</h2>
+    <p>Outside this page the same server runs in <code>precomputing serve</code>, at <code>/mcp</code> beside the HTTP API, or as <code>precomputing mcp FILE</code> for agents that start local tools. A typical client configuration:</p>
+    <pre class="code" id="connect-code"></pre>
+    <p class="note">The server speaks the current protocol revision, 2026-07-28, and answers clients that open with the older handshake (2025-11-25, 2025-06-18 and 2025-03-26). Every tool only reads. A read token cannot post events. The code is open source under the Apache License 2.0, at <a href="https://github.com/precomputing/precomputing">github.com/precomputing/precomputing</a>.</p>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <div class="wrap">Precomputing <span id="pc-version">0.1.1</span> with SQLite <span id="sqlite-version">3</span>, running in this page. Nothing is sent anywhere.</div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

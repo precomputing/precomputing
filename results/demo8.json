@@ -1,0 +1,330 @@
+{
+ "sqlite": "3.53.4",
+ "data": "generated",
+ "runs": 100,
+ "calls": 2045,
+ "repos": 30,
+ "messages": 4190,
+ "wallMs": 1526,
+ "initMs": 626,
+ "engineMs": 1116,
+ "checkpoints": 782,
+ "callsPerSec": 1832,
+ "requestBytes": 90898401,
+ "replyBytes": 642870,
+ "pieceBytes": 4540087,
+ "pieces": 4092,
+ "traceBytes": 6545408,
+ "fileBytes": 9838592,
+ "smaller": 13.887354462853958,
+ "rebuilt": 2045,
+ "same": 2045,
+ "differ": [],
+ "rebuildMs": 290,
+ "planted": 4,
+ "masked": 4,
+ "left": 0,
+ "checks": [
+  {
+   "name": "Cost of each run",
+   "n": 100,
+   "equal": 100,
+   "extra": 0
+  },
+  {
+   "name": "Calls and tokens of each run",
+   "n": 100,
+   "equal": 100,
+   "extra": 0
+  },
+  {
+   "name": "Calls and cost of each repository, for the day",
+   "n": 30,
+   "equal": 30,
+   "extra": 0
+  },
+  {
+   "name": "Tokens and cost of each source",
+   "n": 8,
+   "equal": 8,
+   "extra": 0
+  },
+  {
+   "name": "Cost of each model",
+   "n": 1,
+   "equal": 1,
+   "extra": 0
+  }
+ ],
+ "totalNano": 1455406520,
+ "byCallsStream": 1455406520,
+ "bySourceStream": 1455406520,
+ "again": {
+  "run": "generated-0066",
+  "repo": "quillon-dev/kilnforms",
+  "calls": 20,
+  "refused": 20,
+  "before": 10253880,
+  "after": 10253880,
+  "t": 1790694000
+ },
+ "refused": {
+  "calls": 20,
+  "context": 136
+ },
+ "alerts": [
+  {
+   "repo": "tallowcraft/tarnforms",
+   "lim": 200000000,
+   "used": 240369880,
+   "callId": "generated-0046#45",
+   "run": "generated-0046",
+   "ts": 1790680626,
+   "seen": 1790680680,
+   "after": 46,
+   "afterRun": 22,
+   "afterCost": 304418000
+  }
+ ],
+ "rebuild": {
+  "callId": "generated-0046#40",
+  "bytes": 621043,
+  "pieces": 81,
+  "same": true,
+  "sha": "36eb294ca1c0a47b8f35be9f317cc25ec058b874d5032043e5f616abb15b74cc",
+  "shaSent": "36eb294ca1c0a47b8f35be9f317cc25ec058b874d5032043e5f616abb15b74cc",
+  "stored": "36eb294ca1c0a47b8f35be9f317cc25ec058b874d5032043e5f616abb15b74cc",
+  "ms": 2.21,
+  "parts": [
+   {
+    "source": "tool:execute_bash",
+    "n": 27,
+    "bytes": 572645
+   },
+   {
+    "source": "tool:str_replace_editor",
+    "n": 12,
+    "bytes": 28477
+   },
+   {
+    "source": "assistant",
+    "n": 39,
+    "bytes": 11135
+   },
+   {
+    "source": "system",
+    "n": 1,
+    "bytes": 3980
+   },
+   {
+    "source": "tools",
+    "n": 1,
+    "bytes": 3907
+   },
+   {
+    "source": "task",
+    "n": 1,
+    "bytes": 770
+   }
+  ]
+ },
+ "news": [
+  {
+   "at": "08:47:55",
+   "kind": "amber",
+   "text": "A tool's output in run generated-0017 (marrowgate/embergraph) held an AWS key id and an AWS secret key. Both were masked before call 3 reached the file."
+  },
+  {
+   "at": "11:15:54",
+   "kind": "red",
+   "text": "Run generated-0046 on tallowcraft/tarnforms has made 40 calls in 6 minutes, and each call now sends 144k tokens: the agent runs the whole test suite again and again."
+  },
+  {
+   "at": "11:17:06",
+   "kind": "red",
+   "text": "Alert: tallowcraft/tarnforms has spent its budget of $0.20 for the day. Call 45 of run generated-0046, at 11:17, took it past. A gateway that reads repo_budget before each call would stop the run here."
+  },
+  {
+   "at": "13:50:31",
+   "kind": "amber",
+   "text": "A tool's output in run generated-0058 (brambleworks/gildflow) held a GitHub token. It was masked before call 3 reached the file."
+  },
+  {
+   "at": "15:00:00",
+   "kind": "teal",
+   "text": "You reported run generated-0066 again: its 20 calls went to the store a second time. The store knew them and the meter refused 20 as repeats; the run still costs $0.01."
+  },
+  {
+   "at": "17:11:06",
+   "kind": "amber",
+   "text": "A tool's output in run generated-0083 (fernwick/tarnsync) held an API key. It was masked before call 4 reached the file."
+  }
+ ],
+ "tables": [
+  {
+   "name": "trace_pieces",
+   "bytes": 5472256,
+   "rows": 4092
+  },
+  {
+   "name": "context_raw",
+   "bytes": 1138688,
+   "rows": 14280
+  },
+  {
+   "name": "trace_calls",
+   "bytes": 647168,
+   "rows": 2045
+  },
+  {
+   "name": "context_ids_ts",
+   "bytes": 614400,
+   "rows": null
+  },
+  {
+   "name": "context_ids",
+   "bytes": 614400,
+   "rows": 14280
+  },
+  {
+   "name": "sqlite_autoindex_trace_pieces_1",
+   "bytes": 327680,
+   "rows": null
+  },
+  {
+   "name": "context_raw_ts",
+   "bytes": 204800,
+   "rows": null
+  },
+  {
+   "name": "calls_raw",
+   "bytes": 196608,
+   "rows": 2045
+  },
+  {
+   "name": "trace_calls_run",
+   "bytes": 98304,
+   "rows": null
+  },
+  {
+   "name": "context_win",
+   "bytes": 98304,
+   "rows": 647
+  },
+  {
+   "name": "calls_ids_ts",
+   "bytes": 73728,
+   "rows": null
+  },
+  {
+   "name": "calls_ids",
+   "bytes": 73728,
+   "rows": 2045
+  },
+  {
+   "name": "sqlite_schema",
+   "bytes": 49152,
+   "rows": null
+  },
+  {
+   "name": "calls_win",
+   "bytes": 49152,
+   "rows": 204
+  },
+  {
+   "name": "calls_raw_ts",
+   "bytes": 32768,
+   "rows": null
+  },
+  {
+   "name": "_pc_context_by_repo_source_per_day",
+   "bytes": 24576,
+   "rows": 236
+  },
+  {
+   "name": "sqlite_autoindex__precomputing_sources_1",
+   "bytes": 8192,
+   "rows": null
+  },
+  {
+   "name": "sqlite_autoindex__precomputing_objects_1",
+   "bytes": 8192,
+   "rows": null
+  },
+  {
+   "name": "sqlite_autoindex__precomputing_1",
+   "bytes": 8192,
+   "rows": null
+  },
+  {
+   "name": "repo_budget_limit",
+   "bytes": 8192,
+   "rows": 30
+  },
+  {
+   "name": "context_refused",
+   "bytes": 8192,
+   "rows": 7
+  },
+  {
+   "name": "context_clock",
+   "bytes": 8192,
+   "rows": 1
+  },
+  {
+   "name": "calls_refused",
+   "bytes": 8192,
+   "rows": 1
+  },
+  {
+   "name": "calls_clock",
+   "bytes": 8192,
+   "rows": 1
+  },
+  {
+   "name": "_precomputing_sources",
+   "bytes": 8192,
+   "rows": 1
+  },
+  {
+   "name": "_precomputing_objects",
+   "bytes": 8192,
+   "rows": 16
+  },
+  {
+   "name": "_precomputing",
+   "bytes": 8192,
+   "rows": 4
+  },
+  {
+   "name": "_pc_context_by_source_per_day",
+   "bytes": 8192,
+   "rows": 8
+  },
+  {
+   "name": "_pc_calls_by_run",
+   "bytes": 8192,
+   "rows": 100
+  },
+  {
+   "name": "_pc_calls_by_repo_per_day",
+   "bytes": 8192,
+   "rows": 30
+  },
+  {
+   "name": "_pc_calls_by_model_per_day",
+   "bytes": 8192,
+   "rows": 1
+  }
+ ],
+ "passed": true,
+ "native": {
+  "put": [
+   "100 runs, 2045 calls kept, 20 reported again and refused, 4 secrets masked",
+   "requests as sent 90.9 MB; kept as 4092 new pieces, 4.5 MB",
+   "cost in the file $1.46, at the policy's prices"
+  ],
+  "compare": "19 tables, 40043 rows, 231641 values, 0 differences",
+  "identical": true
+ }
+}
