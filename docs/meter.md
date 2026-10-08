@@ -158,7 +158,7 @@ Demo 8 runs a day of 100 coding-agent runs on 30 repositories, generated in the 
 | A run reported twice | 20 calls sent again: 20 refused in `calls_refused` and 136 source events in `context_refused`, and every cost unchanged |
 | Native against the browser | `precomputing traces` keeps the same day in 0.8 to 1.0 seconds. Its file equals the browser's: 19 tables, 40,043 rows, 231,641 values, leaving out the budget limits the demo adds |
 
-## Limits of Version 0.1.1
+## Limits of Version 0.2.0
 
 - The meter's clock is the newest event time it has counted. One report stamped far in the future moves that clock for every gateway and can close a month early, so gateways need correct clocks.
 - One writer per file. Gateways report to one Engine process, over HTTP, or into one SQLite database that runs the triggers.

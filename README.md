@@ -1,4 +1,4 @@
-# Precomputing 0.1.1-alpha
+# Precomputing 0.2.0
 
 Answers kept ready as data arrives.
 
@@ -21,19 +21,25 @@ stream latency {
 precompute p99_ms = p99(latency.ms) by endpoint
 ```
 
-This is version 0.1.1-alpha, released on 5 October 2026. It has been checked on simulated and generated data; nobody has run it on production traffic yet. It hasn't had an outside security review either, so don't put it in front of anything that matters.
+This is version 0.2.0, released on 8 October 2026. It has been checked on simulated and generated data; nobody has run it on production traffic yet. It hasn't had an outside security review either, so don't put it in front of anything that matters.
 
 The whole project is open source under the Apache License 2.0. Copyright 2026 Precomputing.com.
 
 ## Install
 
-Ready-made binaries for Linux are in [`releases/v0.1.1-alpha/`](releases/v0.1.1-alpha/): `precomputing-0.1.1-alpha-linux-amd64.tar.gz` for x86-64 and `precomputing-0.1.1-alpha-linux-arm64.tar.gz` for 64-bit ARM. They are static and have no dependencies. Check the tarball against `SHA256SUMS` before you unpack it:
+Ready-made binaries are on the [releases page](https://github.com/precomputing/precomputing/releases/latest), for Linux (x86-64 and ARM64, static, no dependencies), macOS (Apple silicon and Intel) and Windows (x86-64). The newest one is always at the same address, for example on Linux x86-64:
 
 ```sh
+curl -LO https://github.com/precomputing/precomputing/releases/latest/download/precomputing_linux_amd64.tar.gz
+curl -LO https://github.com/precomputing/precomputing/releases/latest/download/SHA256SUMS
 sha256sum -c --ignore-missing SHA256SUMS
-tar -xzf precomputing-0.1.1-alpha-linux-amd64.tar.gz
-./precomputing-0.1.1-alpha-linux-amd64/precomputing version
+tar -xzf precomputing_linux_amd64.tar.gz
+./precomputing version
 ```
+
+The other files are `precomputing_linux_arm64.tar.gz`, `precomputing_darwin_arm64.tar.gz`, `precomputing_darwin_amd64.tar.gz` and `precomputing_windows_amd64.zip`. Each holds the binary with `LICENSE`, `NOTICE`, `THIRD-PARTY-LICENSES.txt` and this README. The macOS binaries aren't signed by Apple, so macOS may ask you to allow them the first time, or run `xattr -d com.apple.quarantine precomputing`.
+
+Releases build themselves. When the tests pass on a commit to `main` that raises the version in `internal/version/version.go`, `.github/workflows/release.yml` builds the five binaries, runs each one it can through `tools/smoke.sh` (Demo 2's whole trading day, recounted, among other things), and only then tags the commit and publishes the release with the binaries and `SHA256SUMS`.
 
 To build it yourself, see Quick Start.
 
@@ -134,13 +140,14 @@ node tools/traces-prepare.mjs build/traces/nebius.jsonl --source nebius   # writ
 | `demo/` | The eight live demos, as served at precomputing.com/demo/; `demo/mcp/recording/` holds the raw log of the recorded agent session |
 | `tools/` | Builds, headless demo runs, the crash lab, the file comparison, the mutants and the full verification run |
 | `docs/` | The documentation |
-| `releases/` | Ready-made Linux binaries, with checksums and release notes |
+| `.github/workflows/` | The tests on Linux and macOS for every push, and the release workflow |
 | `results/` | The outputs of the checks run for this release |
 
 ## Checks
 
 ```sh
 go test ./...                                        # parser, compiler, Engine against the triggers, reducer, Drain, MCP, Traces
+sh tools/smoke.sh build/precomputing                 # what each release binary has to pass before it goes out
 (cd tools && npm install)                            # SQLite WebAssembly, the MCP clients and the tokenizer, for the headless runs
 ./tools/build-demos.sh                               # demo policies, the WebAssembly build, SQLite WebAssembly
 node tools/run-demo1.mjs                             # and run-demo2.mjs to run-demo8.mjs
@@ -161,7 +168,7 @@ To try the demos locally, serve the `demo` folder (`python3 -m http.server --dir
 
 ## Status
 
-Version 0.1.1-alpha. The language, both runtimes, the Meter and Logs are complete for what they cover, and 0.1.1 adds the MCP server, tokens for the HTTP server and Traces. Each document ends with the limits of this release. Logs has no forwarder yet: its batches are read from the file with SQL. The HTTP server takes tokens but has no TLS. Traces takes whole runs; a hook in the agent's path is not built yet. An OpenTelemetry Collector plug-in and TLS are on the roadmap.
+Version 0.2.0. The language, both runtimes, the Meter and Logs are complete for what they cover, and 0.1.1 adds the MCP server, tokens for the HTTP server and Traces. Each document ends with the limits of this release. Logs has no forwarder yet: its batches are read from the file with SQL. The HTTP server takes tokens but has no TLS. Traces takes whole runs; a hook in the agent's path is not built yet. An OpenTelemetry Collector plug-in and TLS are on the roadmap.
 
 ## License
 

@@ -18,11 +18,17 @@ It also includes third-party components under their own terms:
   into demo/lib/go/precomputing.wasm. BSD 3-Clause license, Copyright The Go
   Authors. https://go.dev/LICENSE
 
-- musl libc and Zig's compiler runtime, linked statically into the release
-  binaries in releases/ (built with zig cc). Both are under the MIT license:
+- musl libc and Zig's compiler runtime, linked statically into the Linux
+  release binaries (built with zig cc). Both are under the MIT license:
   Copyright 2005-2020 Rich Felker, et al. (musl) and Copyright Zig contributors.
+  Zig's compiler runtime is in the Windows release binary too.
 
-The full license texts of Go, musl and Zig are in THIRD-PARTY-LICENSES.txt.
+- The mingw-w64 runtime, as shipped with Zig, linked into the Windows release
+  binary. Zope Public License 2.1, apart from parts marked as public domain,
+  BSD or LGPL. Copyright (c) 2009 - 2013 by the mingw-w64 project.
+
+The full license texts of Go, musl, Zig and mingw-w64 are in
+THIRD-PARTY-LICENSES.txt.
 
 The Loghub samples used to check the template miner are not included; the
 script tools/fetch-loghub.sh downloads them from https://github.com/logpai/loghub.

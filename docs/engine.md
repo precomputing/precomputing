@@ -112,7 +112,7 @@ On the machine that built this release, a shared two-core cloud server (Intel Xe
 
 The crash lab is `go run ./tools/crashlab`. It feeds the day as CSV, kills the Engine with SIGKILL at random moments between 40 and 300 milliseconds apart, restarts it, checks that the file never holds less than the last acknowledgement, resends from where the file stands, and at the end compares the file with an uninterrupted run and with the triggers.
 
-## Limits of Version 0.1.1
+## Limits of Version 0.2.0
 
 - One writer per file. Reads can run alongside.
 - Values must be finite numbers; integer values and keys must be whole numbers. In the browser, integers travel through the bridge as doubles, exact below 2^53.

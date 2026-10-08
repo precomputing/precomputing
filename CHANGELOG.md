@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 (8 October 2026)
+
+The code is 0.1.1-alpha's. What's new is how it ships.
+
+- Releases build themselves. Every push to `main` runs the tests on Linux and macOS, with the race detector on Linux. When they pass on a commit that raises the version, the release workflow builds the binaries, checks them, tags the commit and publishes the release. Nothing goes out unless every build and check passes.
+- Binaries for five systems instead of two: Linux x86-64 and ARM64 (static, as before), macOS Apple silicon and Intel, and Windows x86-64. They're on GitHub's releases page under names without a version, so `releases/latest/download/` links always get the newest.
+- `tools/smoke.sh` is the check each binary has to pass: a policy compiled, a file kept current from events and read back, then `precomputing demo`, Demo 2's 4,048,210 trades recounted with 0 differences allowed. The Windows binary runs the same check on Windows. The ARM64 Linux binary now runs before it's released; 0.1.1-alpha's was only built.
+- The binaries are no longer kept in the repository; the `releases/` folder is gone.
+- NOTICE and THIRD-PARTY-LICENSES.txt cover the mingw-w64 runtime in the Windows binary.
+
 ## 0.1.1-alpha (5 October 2026)
 
 The first public release, under the Apache License 2.0.

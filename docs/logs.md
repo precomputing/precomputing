@@ -174,7 +174,7 @@ Demo 8 runs a day of 100 such runs on 30 repositories through the store and the 
 
 `node tools/run-demo8.mjs --db browser.db --native build/precomputing` runs the demo's own code, rebuilds every call, recounts every cost, runs the same day through `precomputing traces` and compares the two files. The tests in `traces/` rebuild every call of the day from the file, check the patterns, and open a file again to carry on from where it stood.
 
-## Limits of Version 0.1.1
+## Limits of Version 0.2.0
 
 - One line format per policy. JSON lines are read as text.
 - Template numbers belong to one file. A template's text widens as lines join it; its number stays.

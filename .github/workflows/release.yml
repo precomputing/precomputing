@@ -1,0 +1,292 @@
+name: release
+
+# Builds the precomputing binaries, checks each one, and publishes them with a
+# release.
+#
+# Releases go out on their own. When the tests pass on a push to main and the
+# version in internal/version/version.go has no tag yet, this workflow builds
+# and checks the binaries from that commit, then tags it and publishes the
+# release with the binaries attached. Nothing goes public unless every build
+# and check passes.
+#
+# It also attaches binaries to a release someone publishes by hand, and it can
+# be run by hand to rebuild the binaries of an existing tag.
+#
+# Linux and Windows binaries are built with zig cc 0.16.0, the toolchain NOTICE
+# and THIRD-PARTY-LICENSES.txt describe; the macOS ones with Apple's clang.
+
+on:
+  workflow_run:
+    workflows: [test]
+    types: [completed]
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build, such as v0.2.0"
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.24.x"
+  ZIG_VERSION: "0.16.0"
+
+jobs:
+  plan:
+    # After the tests, only for a push to main in this repository that passed.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+      ref: ${{ steps.plan.outputs.ref }}
+      new: ${{ steps.plan.outputs.new }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          case "$EVENT" in
+          workflow_run)
+            # Only the commit main is at now; if main has moved on, the run
+            # after the next push decides.
+            head=$(git ls-remote origin refs/heads/main | cut -f1)
+            if [ "$head" != "$RUN_SHA" ]; then
+              echo "No release: main has moved on from $RUN_SHA to $head."
+              exit 0
+            fi
+            version=$(sed -n 's/^const Version = "\([0-9]*\.[0-9]*\.[0-9]*\)"$/\1/p' internal/version/version.go)
+            if [ -z "$version" ]; then
+              echo "internal/version/version.go has no Version of the form X.Y.Z" >&2
+              exit 1
+            fi
+            tags=$(git ls-remote --tags --refs origin) || { echo "Couldn't read the repository's tags" >&2; exit 1; }
+            if grep -q "refs/tags/v$version\$" <<< "$tags"; then
+              echo "No release: v$version is out already."
+              exit 0
+            fi
+            newest=$({ grep -o 'refs/tags/v[0-9]*\.[0-9]*\.[0-9]*$' <<< "$tags" || true; } | sed 's|refs/tags/v||' | sort -V | tail -n 1)
+            if [ -n "$newest" ] && [ "$(printf '%s\n%s\n' "$newest" "$version" | sort -V | tail -n 1)" != "$version" ]; then
+              echo "v$version is older than the newest release, v$newest; raise the version above it" >&2
+              exit 1
+            fi
+            echo "Releasing v$version from $RUN_SHA."
+            { echo "tag=v$version"; echo "ref=$RUN_SHA"; echo "new=true"; } >> "$GITHUB_OUTPUT"
+            ;;
+          release)
+            { echo "tag=$RELEASE_TAG"; echo "ref=$RELEASE_TAG"; } >> "$GITHUB_OUTPUT"
+            ;;
+          workflow_dispatch)
+            { echo "tag=$INPUT_TAG"; echo "ref=$INPUT_TAG"; } >> "$GITHUB_OUTPUT"
+            ;;
+          esac
+
+  linux:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            target: x86_64-linux-musl
+            runner: ubuntu-latest
+          - arch: arm64
+            target: aarch64-linux-musl
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - run: python3 -m pip install --user --break-system-packages "ziglang==$ZIG_VERSION"
+      - name: Build a static binary
+        env:
+          CGO_ENABLED: "1"
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+          CC: python3 -m ziglang cc -target ${{ matrix.target }}
+        run: >
+          go build -trimpath
+          -ldflags '-s -w -linkmode external -extldflags "-static -s"' -o precomputing ./cmd/precomputing
+      - run: file precomputing && sh tools/smoke.sh ./precomputing
+      - name: Package
+        run: |
+          mkdir pkg && cp precomputing LICENSE NOTICE THIRD-PARTY-LICENSES.txt README.md pkg/
+          tar -czf precomputing_linux_${{ matrix.arch }}.tar.gz -C pkg .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: precomputing_linux_${{ matrix.arch }}
+          path: precomputing_linux_${{ matrix.arch }}.tar.gz
+
+  macos:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            clang: arm64
+          - arch: amd64
+            clang: x86_64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Build
+        env:
+          CGO_ENABLED: "1"
+          GOARCH: ${{ matrix.arch }}
+          CC: clang -arch ${{ matrix.clang }}
+        run: go build -trimpath -ldflags '-s -w' -o precomputing ./cmd/precomputing
+      - run: file precomputing
+      - if: matrix.arch == 'arm64'
+        run: sh tools/smoke.sh ./precomputing
+      - name: Package
+        run: |
+          mkdir pkg && cp precomputing LICENSE NOTICE THIRD-PARTY-LICENSES.txt README.md pkg/
+          tar -czf precomputing_darwin_${{ matrix.arch }}.tar.gz -C pkg .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: precomputing_darwin_${{ matrix.arch }}
+          path: precomputing_darwin_${{ matrix.arch }}.tar.gz
+
+  windows:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - run: python3 -m pip install --user --break-system-packages "ziglang==$ZIG_VERSION"
+      - name: Build
+        env:
+          CGO_ENABLED: "1"
+          GOOS: windows
+          GOARCH: amd64
+          CC: python3 -m ziglang cc -target x86_64-windows-gnu
+        run: go build -trimpath -ldflags '-s -w' -o precomputing.exe ./cmd/precomputing
+      - name: Package
+        run: |
+          file precomputing.exe
+          mkdir pkg && cp precomputing.exe LICENSE NOTICE THIRD-PARTY-LICENSES.txt README.md pkg/
+          (cd pkg && zip -q ../precomputing_windows_amd64.zip *)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: precomputing_windows_amd64
+          path: precomputing_windows_amd64.zip
+
+  windows-check:
+    needs: windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: precomputing_windows_amd64
+      - name: Run the Windows binary
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          Expand-Archive precomputing_windows_amd64.zip -DestinationPath bin
+          $pc = Resolve-Path bin\precomputing.exe
+          & $pc version
+          @"
+          stream latency {
+            key   endpoint text
+            value ms real
+            raw     keep 5m
+            rollup  1m keep 30d quantiles ms
+          }
+          precompute requests = count(latency) by endpoint
+          "@ | Set-Content -Encoding ascii latency.precompute
+          $sql = (& $pc compile latency.precompute) -join "`n"
+          if ($sql -notmatch 'CREATE TRIGGER') { throw "compile gave no trigger" }
+          "1790586000,/api/search,30`n1790586001,/api/search,40`n1790586002,/api/cart,12" | & $pc put --policy latency.precompute check.db
+          $n = (& $pc get check.db "SELECT value FROM requests WHERE endpoint = '/api/search'") -join "`n"
+          if ($n -notmatch '(?m)^\s*2\s*$') { throw "requests gave $n" }
+          & $pc demo --db demo.db
+          Write-Output "windows check passed"
+
+  release:
+    needs: [plan, linux, macos, windows, windows-check]
+    # Two runs for the same tag take turns; the second finds it published.
+    concurrency:
+      group: release-${{ needs.plan.outputs.tag }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
+      REF: ${{ needs.plan.outputs.ref }}
+      NEW: ${{ needs.plan.outputs.new }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums and notes
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+          cat > ../notes.md <<'EOF'
+          Ready-built precomputing binaries. Each archive holds the `precomputing` command with its license files and the README.
+
+          | System | File |
+          |---|---|
+          | Linux, x86-64 (static) | precomputing_linux_amd64.tar.gz |
+          | Linux, ARM64 (static) | precomputing_linux_arm64.tar.gz |
+          | macOS, Apple silicon | precomputing_darwin_arm64.tar.gz |
+          | macOS, Intel | precomputing_darwin_amd64.tar.gz |
+          | Windows, x86-64 | precomputing_windows_amd64.zip |
+
+          Every binary except macOS Intel ran `precomputing demo` before this release went out: Demo 2's whole trading day, 4,048,210 trades, recounted with 0 differences. CHANGELOG.md in the repository says what changed.
+
+          SHA256SUMS lists the checksums. The macOS binaries aren't signed by Apple, so macOS may ask you to allow them the first time, or you can run `xattr -d com.apple.quarantine precomputing`.
+          EOF
+      - name: Tag the commit and publish the release, binaries attached
+        if: env.NEW == 'true'
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "$TAG is out already."
+            exit 0
+          fi
+          cd dist
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$REF" \
+            --title "Precomputing $TAG" --notes-file ../notes.md \
+            precomputing_linux_amd64.tar.gz precomputing_linux_arm64.tar.gz precomputing_darwin_arm64.tar.gz precomputing_darwin_amd64.tar.gz precomputing_windows_amd64.zip SHA256SUMS
+      - name: Attach the binaries to an existing release
+        if: env.NEW != 'true'
+        run: |
+          cd dist
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            precomputing_linux_amd64.tar.gz precomputing_linux_arm64.tar.gz precomputing_darwin_arm64.tar.gz precomputing_darwin_amd64.tar.gz precomputing_windows_amd64.zip SHA256SUMS
+          body=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body)
+          if [ -z "$body" ]; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file ../notes.md
+          fi

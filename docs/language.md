@@ -153,7 +153,7 @@ Detail is removed by the distill statements, which the compiler writes separatel
 
 Names start with a lowercase letter and use lowercase letters, digits and `_`, up to 48 characters. SQL words and the column names the compiler adds (`ts`, `n`, `w`, `b`, `res`, `value`, `period` and a few more) are refused with a clear message. Durations are a whole number and a unit: `s`, `m`, `h`, `d`, `w` (7 days) or `y` (365 days). Comments start with `#`.
 
-## Limits of Version 0.1
+## Limits of Version 0.2.0
 
 - A compiled file keeps the policy it was created with. To change the policy, start a new file.
 - Values are numbers and may not be null. Sketches assume positive values; zero and negatives go to one bucket read as 0.
