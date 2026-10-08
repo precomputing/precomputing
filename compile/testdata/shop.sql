@@ -1,4 +1,4 @@
--- Compiled by Precomputing 0.1.1 from shop.precompute.
+-- Compiled by Precomputing 0.2.0 from shop.precompute.
 -- File format 1. Every statement is safe to run again on the same file.
 
 -- Stream lines. Insert events with:
@@ -207,7 +207,7 @@ END;
 CREATE TABLE IF NOT EXISTS _precomputing (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT OR REPLACE INTO _precomputing (key, value) VALUES
   ('format', '1'),
-  ('compiler', 'precomputing 0.1.1'),
+  ('compiler', 'precomputing 0.2.0'),
   ('policy', '# Made by precomputing import from the dashboard "Web shop".
 # Each stream from logs keeps some of its panels ready; edit freely.
 

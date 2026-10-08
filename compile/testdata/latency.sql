@@ -1,4 +1,4 @@
--- Compiled by Precomputing 0.1.1 from latency.precompute.
+-- Compiled by Precomputing 0.2.0 from latency.precompute.
 -- File format 1. Every statement is safe to run again on the same file.
 
 -- Stream latency. Insert events with:
@@ -103,7 +103,7 @@ END;
 CREATE TABLE IF NOT EXISTS _precomputing (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT OR REPLACE INTO _precomputing (key, value) VALUES
   ('format', '1'),
-  ('compiler', 'precomputing 0.1.1'),
+  ('compiler', 'precomputing 0.2.0'),
   ('policy', '# API latency for a small web service: the policy behind Demo 1.
 # Every request is one event: when it happened, which endpoint, how long it took.
 

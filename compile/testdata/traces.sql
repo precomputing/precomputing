@@ -1,4 +1,4 @@
--- Compiled by Precomputing 0.1.1 from traces.precompute.
+-- Compiled by Precomputing 0.2.0 from traces.precompute.
 -- File format 1. Every statement is safe to run again on the same file.
 
 -- Stream calls. Insert events with:
@@ -202,7 +202,7 @@ END;
 CREATE TABLE IF NOT EXISTS _precomputing (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT OR REPLACE INTO _precomputing (key, value) VALUES
   ('format', '1'),
-  ('compiler', 'precomputing 0.1.1'),
+  ('compiler', 'precomputing 0.2.0'),
   ('policy', '# Agent traces, metered by the call. Every model call an AI agent makes is counted once, with its
 # tokens and its cost at example prices, and each call''s input is split by where it came from:
 # the system prompt, the tool list, the task, the agent''s earlier messages, or a tool''s output.

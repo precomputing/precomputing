@@ -1,4 +1,4 @@
--- Compiled by Precomputing 0.1.1 from usage.precompute.
+-- Compiled by Precomputing 0.2.0 from usage.precompute.
 -- File format 1. Every statement is safe to run again on the same file.
 
 -- Stream usage. Insert events with:
@@ -110,7 +110,7 @@ END;
 CREATE TABLE IF NOT EXISTS _precomputing (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT OR REPLACE INTO _precomputing (key, value) VALUES
   ('format', '1'),
-  ('compiler', 'precomputing 0.1.1'),
+  ('compiler', 'precomputing 0.2.0'),
   ('policy', '# AI usage metering: the policy behind Demo 3.
 # Every request to a model is one event, sent by the gateway that carried it.
 # Invoice lines are precomputes; a month closes a day after it ends.

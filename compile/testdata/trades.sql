@@ -1,4 +1,4 @@
--- Compiled by Precomputing 0.1.1 from trades.precompute.
+-- Compiled by Precomputing 0.2.0 from trades.precompute.
 -- File format 1. Every statement is safe to run again on the same file.
 
 -- Stream trades. Insert events with:
@@ -138,7 +138,7 @@ END;
 CREATE TABLE IF NOT EXISTS _precomputing (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT OR REPLACE INTO _precomputing (key, value) VALUES
   ('format', '1'),
-  ('compiler', 'precomputing 0.1.1'),
+  ('compiler', 'precomputing 0.2.0'),
   ('policy', '# Stock trades turned into candles: the policy behind Demo 2.
 # A candle is a window summary: open, high, low and close are the first,
 # maximum, minimum and last price, volume is size_sum, and VWAP is
