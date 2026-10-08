@@ -507,7 +507,7 @@ func getWindows(r Reader, a args) (string, error) {
 					f = append(f, num(g.sum[i]))
 				case "std":
 					m := g.sum[i] / float64(g.n)
-					f = append(f, num(math.Sqrt(math.Max(0, g.sumsq[i]/float64(g.n)-m*m))))
+					f = append(f, num(math.Sqrt(math.Max(0, g.sumsq[i]/float64(g.n)-float64(m*m)))))
 				}
 			}
 			sk := s.sketches[n]

@@ -2,11 +2,12 @@
 
 ## 0.2.0 (8 October 2026)
 
-The code is 0.1.1-alpha's. What's new is how it ships.
+Apart from one fix for ARM64, the code is 0.1.1-alpha's. What's new is mostly how it ships.
 
-- Releases build themselves. Every push to `main` runs the tests on Linux and macOS, with the race detector on Linux. When they pass on a commit that raises the version, the release workflow builds the binaries, checks them, tags the commit and publishes the release. Nothing goes out unless every build and check passes.
+- Releases build themselves. Every push to `main` runs the tests on Linux (x86-64 and ARM64) and macOS, with the race detector on Linux. When they pass on a commit that raises the version, the release workflow builds the binaries, checks them, tags the commit and publishes the release. Nothing goes out unless every build and check passes.
 - Binaries for five systems instead of two: Linux x86-64 and ARM64 (static, as before), macOS Apple silicon and Intel, and Windows x86-64. They're on GitHub's releases page under names without a version, so `releases/latest/download/` links always get the newest.
 - `tools/smoke.sh` is the check each binary has to pass: a policy compiled, a file kept current from events and read back, then `precomputing demo`, Demo 2's 4,048,210 trades recounted with 0 differences allowed. The Windows binary runs the same check on Windows. The ARM64 Linux binary now runs before it's released; 0.1.1-alpha's was only built.
+- Fixed: on ARM64 (Apple silicon, ARM Linux) the Engine's files drifted from the SQL runtime's in the last bit of some sums, and Demo 2's recount found 7,045 differing candles. Go may fuse a multiply and an add into one instruction there, which rounds once instead of twice. The Engine, the recount, the compiler and the MCP server now round each product first, as the market simulator already did, so ARM64 writes the same values as x86-64.
 - The binaries are no longer kept in the repository; the `releases/` folder is gone.
 - NOTICE and THIRD-PARTY-LICENSES.txt cover the mingw-w64 runtime in the Windows binary.
 

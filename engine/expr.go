@@ -107,7 +107,7 @@ func arith(op byte, a, b num) (num, bool) {
 	case '-':
 		return num{f: x - y}, true
 	}
-	return num{f: x * y}, true
+	return num{f: float64(x * y)}, true
 }
 
 // mul128 returns the 128-bit product of a and b as a high and a low word.

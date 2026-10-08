@@ -27,7 +27,7 @@ func NewRecount() *Recount {
 }
 
 func add(c **Candle, w int64, p, z float64) {
-	nv := p * z
+	nv := float64(p * z) // rounded here, never fused with the add below
 	if *c == nil {
 		*c = &Candle{W: w, N: 1, Open: p, High: p, Low: p, Close: p, Volume: z, Turnover: nv, Sum: p}
 		return

@@ -558,7 +558,7 @@ func (a *anomalyRule) update(b *baseRow, x float64) {
 	if b.n < a.warm {
 		n1 := float64(b.n + 1)
 		m := b.m + (x-b.m)/n1
-		v := (float64(b.n)*b.v + (x-b.m)*(x-(b.m+(x-b.m)/n1))) / n1
+		v := (float64(float64(b.n)*b.v) + float64((x-b.m)*(x-(b.m+(x-b.m)/n1)))) / n1
 		b.m, b.v = m, v
 	} else {
 		sd := math.Sqrt(b.v)
@@ -570,7 +570,7 @@ func (a *anomalyRule) update(b *baseRow, x float64) {
 		if hi := a.clip * sd; !(dc < hi) {
 			dc = hi
 		}
-		m := b.m + a.alpha*dc
+		m := b.m + float64(a.alpha*dc)
 		v := (1 - a.alpha) * (b.v + a.alpha*dc*dc/a.huber)
 		b.m, b.v = m, v
 	}
@@ -629,7 +629,9 @@ func (w *window) add(ts int64, nf []float64, flag int64) {
 	for i, x := range nf {
 		st := w.st[6*i : 6*i+6]
 		st[0] = st[0] + x
-		st[1] = st[1] + x*x
+		// float64(...) rounds the product before the add. Without it ARM64 may fuse the two into
+		// one instruction that rounds once, and the sum drifts from SQLite's in the last bit.
+		st[1] = st[1] + float64(x*x)
 		if !(st[2] < x) {
 			st[2] = x
 		}

@@ -36,7 +36,7 @@ const Clip = 1.5
 func huberK(c float64) float64 {
 	tail := 0.5 * math.Erfc(c/math.Sqrt2)          // P(Z > c)
 	pdf := math.Exp(-c*c/2) / math.Sqrt(2*math.Pi) // density at c
-	return (1 - 2*tail) - 2*c*pdf + 2*c*c*tail
+	return (1 - float64(2*tail)) - float64(2*c*pdf) + float64(2*c*c*tail)
 }
 
 // Source compiles the text of a policy. name is used in comments only.
