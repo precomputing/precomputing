@@ -37,7 +37,9 @@ This is `examples/usage.precompute`, the policy behind Demo 3.
 
 **The close.** A month closes a day after it ends. From then on nothing can change its totals, so an invoice sent on the 2nd stays true. A report that arrives after the close is refused as `closed` and counted, so the revenue it represents is known to the request. In Demo 3 a queue stuck in the us gateway is emptied five hours after the close, and all 642 of its reports are refused.
 
-**Disputes.** Every request stays whole until its month has been closed for 90 days, so any invoice line can be checked request by request while a customer can still dispute it. After that, distill removes the requests and the invoice lines stay. The hourly and daily windows stay too, for charts and for comparing months.
+**Clocks that are wrong.** The meter's clock is the newest report it has counted, so a gateway whose clock jumps a year ahead could make September look long closed and every report after it refused. A line `ahead 10m` in the stream refuses a report stamped more than ten minutes past the meter's own clock, as `ahead` in `usage_refused`, and that report moves nothing. Demo 3's policy leaves the line out, as 0.2's did; add it to a running meter's file with `precomputing migrate`.
+
+**Disputes. Every request stays whole until its month has been closed for 90 days, so any invoice line can be checked request by request while a customer can still dispute it. After that, distill removes the requests and the invoice lines stay. The hourly and daily windows stay too, for charts and for comparing months.
 
 **Quotas.** `monthly_tokens` shows each customer's use against its limit for every month. A gateway reads it before serving, one lookup by primary key, and turns a request away when `reached` is 1. A request turned away is never served, so it never reaches the meter. A customer without a row in `monthly_tokens_limit` has no limit.
 
@@ -158,9 +160,9 @@ Demo 8 runs a day of 100 coding-agent runs on 30 repositories, generated in the 
 | A run reported twice | 20 calls sent again: 20 refused in `calls_refused` and 136 source events in `context_refused`, and every cost unchanged |
 | Native against the browser | `precomputing traces` keeps the same day in 0.8 to 1.0 seconds. Its file equals the browser's: 19 tables, 40,043 rows, 231,641 values, leaving out the budget limits the demo adds |
 
-## Limits of Version 0.2.0
+## Limits of Version 0.3.0
 
-- The meter's clock is the newest event time it has counted. One report stamped far in the future moves that clock for every gateway and can close a month early, so gateways need correct clocks.
+- The meter's clock is the newest event time it has counted. Without `ahead`, one report stamped far in the future moves that clock for every gateway and can close a month early. With it, the machine running the meter needs a correct clock.
 - One writer per file. Gateways report to one Engine process, over HTTP, or into one SQLite database that runs the triggers.
 - Periods are UTC hours, days or months. A customer billed on another calendar can be billed from a per-day precompute that the billing view adds up.
 - The customers, prices and plans in Demo 3 are invented examples.

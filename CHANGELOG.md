@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 (3 November 2026)
+
+- `ahead` for exact streams. An event stamped more than that past the clock of the machine counting it is refused as `ahead`, before the other checks, and moves no clock. Without it, one report from a gateway whose clock ran a year ahead could close a billing month early. Both runtimes check it the same way; it is the one rule that reads the wall clock.
+- HTTPS in `precomputing serve`: `--tls-cert` and `--tls-key`, TLS 1.2 or later. The pair is read again when the files change, so a renewed certificate needs no restart, and a pair that fails to load leaves the last good one in use.
+- OpenTelemetry over OTLP/HTTP in `serve`: `POST /v1/logs` and `/v1/metrics`, protobuf or JSON, gzip or not. Log records go to the streams from logs with their attributes as fields, and their templates are learned from the body. A new stream form, `stream NAME from metrics "metric.name"`, takes gauges, sums and histograms; cumulative points become deltas per series, kept in the file, and a restarted series counts from zero. A request is remembered by its SHA-256 for an hour, so an exporter's retry counts once. The decoders are hand-written and checked against requests from the official OpenTelemetry classes.
+- `precomputing migrate --policy NEW [--dry-run] FILE`: a new version of a file's policy without starting over. New streams, rollups, precomputes, quotas, raw events, samples and anomalies start empty at the migration; retention, `ahead`, sample and anomaly settings change from then on. Anything that would change what the file already counted is refused with the reason, and a migration that fails leaves the file as it was. `inspect` lists a file's migrations.
+- A logs block needs a `format` only to read lines; `logs {}` is enough for OTLP records.
+- Go 1.26 or later to build; CI and releases use the current stable Go.
+
 ## 0.2.0 (8 October 2026)
 
 Apart from one fix for ARM64, the code is 0.1.1-alpha's. What's new is mostly how it ships.

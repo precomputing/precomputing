@@ -65,6 +65,10 @@ A line's fields are the format's fields, every `key=value` pair in the message (
 
 `mask "REGEX"` lines in the `logs` block mask more of the message before its template is learned, such as identifiers that are not written as `key=value`. `templates similarity 0.5 depth 4` sets the template tree; those are the defaults.
 
+## Records over OTLP
+
+Applications and OpenTelemetry Collectors that already send logs over OTLP/HTTP can send them to `precomputing serve` instead of writing lines: `POST /v1/logs`, protobuf or JSON. Each record is read as a line would be, with no format to parse. Its fields are its attributes and those of its scope and resource, with dots and dashes read as `_`; `service` comes from `service.name`, `level` from the severity, and the template is learned from the body, with `key=value` pairs in it read as fields as in a line. The line kept with raw events, samples and anomalies is the record's time, level, service and body, then its own attributes. [The Engine](engine.md#opentelemetry) has the details of the endpoint, and the logs block may leave out its format when records are all it takes.
+
 ## Templates
 
 Templates are learned with Drain, the online log parser with a fixed-depth tree (He, Zhu, Zheng and Lyu, 2017). The Go port follows the reference implementation in logpai/logparser step by step. On each of the 16 Loghub samples of 2,000 lines, with the published settings, its grouping accuracy equals Drain's published figure:
@@ -174,13 +178,13 @@ Demo 8 runs a day of 100 such runs on 30 repositories through the store and the 
 
 `node tools/run-demo8.mjs --db browser.db --native build/precomputing` runs the demo's own code, rebuilds every call, recounts every cost, runs the same day through `precomputing traces` and compares the two files. The tests in `traces/` rebuild every call of the day from the file, check the patterns, and open a file again to carry on from where it stood.
 
-## Limits of Version 0.2.0
+## Limits of Version 0.3.0
 
-- One line format per policy. JSON lines are read as text.
+- One line format per policy. JSON lines are read as text; OTLP records need none.
 - Template numbers belong to one file. A template's text widens as lines join it; its number stays.
 - The errors stream matches the level `ERROR` as written.
 - The dashboard import reads count, rate, sum, avg, min, max and percentiles, grouped by fields and filtered by fields equal to a text.
-- Upstream batches are read from the file; there is no forwarder yet, and no OpenTelemetry Collector plug-in.
+- Upstream batches are read from the file; there is no forwarder yet. OTLP comes in, nothing goes out over it.
 - The shop, its customers' searches and its incidents are invented.
 - Demo 6's thresholds were chosen on this shop. Two faults that break the same templates in the same proportions look alike, and overlapping incidents mix their fingerprints.
 - Traces takes whole runs, from the command line or in the browser. A hook in the agent's path, so that each call arrives as its reply comes back, is not built yet.

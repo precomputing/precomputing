@@ -37,11 +37,12 @@ The triggers are in the Engine's file too. The SQL runtime can carry on in a fil
 | Command | What it does |
 |---|---|
 | `put [--policy P] [--seq] [--format csv\|json] [--every 100ms] FILE` | Reads events from standard input and keeps the file current. Prints `ready SEQ` when it starts and `ok SEQ` after each checkpoint |
-| `serve [--policy P] [--addr localhost:8080] [--every 100ms] [--read-only] [--token-file F] FILE` | The same over HTTP, with MCP for AI agents at `/mcp`. `--read-only` serves a file without taking events; `--token-file` asks every request for a token |
+| `serve [--policy P] [--addr localhost:8080] [--every 100ms] [--read-only] [--token-file F] [--tls-cert C --tls-key K] FILE` | The same over HTTP, with MCP for AI agents at `/mcp` and OpenTelemetry logs and metrics at `/v1/logs` and `/v1/metrics`. `--read-only` serves a file without taking events; `--token-file` asks every request for a token; `--tls-cert` and `--tls-key` make it HTTPS |
 | `mcp FILE` | Serves one file to an AI agent over standard input and output, for agents that start their tools themselves |
 | `get FILE NAME\|SQL [--json]` | Prints a precompute, a table or a read-only query |
 | `stats FILE` | Rows and bytes per table, and where each sender stands |
-| `inspect FILE` | The policy the file was made from and what it holds |
+| `inspect FILE` | The policy the file was made from, what it holds and the migrations it has been through |
+| `migrate --policy NEW [--dry-run] FILE` | Moves a file to a new version of its policy, keeping what it holds (see [Changing a Policy](language.md#changing-a-policy)) |
 | `put --lines [--policy P] FILE` | Reads log lines with the policy's `logs` block, learns their templates and feeds the streams from logs. A line's sequence number is its line number (see [Logs](logs.md)) |
 | `import DASHBOARD.json` | Prints a policy that keeps a dashboard's panels ready from log lines |
 | `templates FILE` | The log templates a file has learned |
@@ -59,10 +60,36 @@ CSV lines hold `[seq,] ts, keys..., values...` in the order the policy declares 
 | `POST /v1/events?source=NAME` | Events, one per line: JSON, or CSV with `Content-Type: text/csv`. The reply comes once they are in the file: `{"applied", "skipped", "refused", "committed"}` |
 | `GET /v1/answers/NAME` | The rows of a precompute, as JSON |
 | `GET /v1/query?sql=...` | A read-only query, as JSON |
-| `GET /v1/stats` | Counters and senders |
+| `GET /v1/stats` | Counters and senders, and what OTLP brought in |
+| `POST /v1/logs`, `POST /v1/metrics` | OpenTelemetry logs and metrics over OTLP/HTTP: see [OpenTelemetry](#opentelemetry) |
 | `POST /mcp` | The Model Context Protocol for AI agents: see [Serving AI Agents over MCP](#serving-ai-agents-over-mcp) |
 
-Reads go through a second, read-only connection and see the last checkpoint. With `--token-file`, every request needs a token, as described below; the server speaks plain HTTP, so outside localhost it belongs behind a proxy that adds TLS.
+Reads go through a second, read-only connection and see the last checkpoint. With `--token-file`, every request needs a token, as described below.
+
+**TLS.** `--tls-cert cert.pem --tls-key key.pem` makes the server speak HTTPS only, TLS 1.2 or later. The certificate file may hold the whole chain. Every new connection checks whether the files changed, so a certificate renewed in place (by certbot, say) is used from the next connection without a restart. A pair that doesn't load, such as a renewal half written, is logged once and the last good pair stays in use. Without TLS, outside localhost, the server warns at start that tokens and answers cross the network in plain text.
+
+## OpenTelemetry
+
+`precomputing serve` takes OpenTelemetry logs and metrics the way an OTLP/HTTP exporter sends them, so an application or an OpenTelemetry Collector can send straight to it:
+
+```yaml
+exporters:
+  otlphttp:
+    endpoint: https://precomputing.internal:8080
+    headers:
+      Authorization: "Bearer WRITE_TOKEN"
+```
+
+| Request | What happens |
+|---|---|
+| `POST /v1/logs` | Each log record goes to the policy's streams from logs, as a line would, and its template is learned from its body ([the language](language.md#streams-from-logs) says how its fields are named) |
+| `POST /v1/metrics` | Each point of a metric goes to the streams from metrics that take it ([the language](language.md#streams-from-metrics)) |
+
+Both take protobuf (`application/x-protobuf`) and JSON (`application/json`), gzip or not, up to 16 MB a request and 64 MB unpacked, and need a write token when the server has a token file. The decoders are written by hand, so the binary still needs nothing beyond Go's standard library; the tests check them against requests written by the official OpenTelemetry protobuf classes, in both encodings. The reply comes once the events are in the file. It is empty when everything was taken, and otherwise a partial success that says how many records or points were refused and the first reason, as the protocol asks. A request that can't be decoded gets 400, and one that comes while the Engine has stopped gets 503, so the exporter sends it again.
+
+**Retries.** OTLP has no sequence numbers. An exporter that gets no answer, because the server was killed between the checkpoint and the reply, sends the same request again. The server keeps the SHA-256 of every request it counted for an hour, in the file with the checkpoint that holds its events, and skips a request it has seen. Two exports of exactly the same bytes within the hour count once, which is right for a retry and rarely wrong otherwise, since exports carry their times.
+
+**Counting.** Points of metrics no stream takes are left alone. Metrics that a stream takes but that aren't gauges, sums or histograms are refused, and so is a point whose values don't fit its stream (a fraction for an integer value, a missing key). `GET /v1/stats` shows the counts under `otlp`: requests, repeats, records, points, events, unused points, baselines set and refusals.
 
 ## Serving AI Agents over MCP
 
@@ -112,10 +139,11 @@ On the machine that built this release, a shared two-core cloud server (Intel Xe
 
 The crash lab is `go run ./tools/crashlab`. It feeds the day as CSV, kills the Engine with SIGKILL at random moments between 40 and 300 milliseconds apart, restarts it, checks that the file never holds less than the last acknowledgement, resends from where the file stands, and at the end compares the file with an uninterrupted run and with the triggers.
 
-## Limits of Version 0.2.0
+## Limits of Version 0.3.0
 
 - One writer per file. Reads can run alongside.
 - Values must be finite numbers; integer values and keys must be whole numbers. In the browser, integers travel through the bridge as doubles, exact below 2^53.
 - The Engine keeps one baseline per key and the current period's precompute rows in memory, and at start it reads the newest window of every key.
-- A policy's streams, rollups and precomputes are fixed for the life of a file.
-- The HTTP server takes tokens, but it has no TLS. Outside localhost, run it behind a proxy that adds TLS.
+- `migrate` adds to a policy and changes settings from then on; it can't change what a file has counted. Stop the writer while it runs.
+- OTLP has no sequence numbers: a request is known again only by its exact bytes, for an hour. A sender that rebuilds a request differently after a crash counts it twice.
+- Traces over OTLP are not taken.

@@ -1,4 +1,4 @@
-# Precomputing 0.2.0
+# Precomputing 0.3.0
 
 Answers kept ready as data arrives.
 
@@ -21,7 +21,7 @@ stream latency {
 precompute p99_ms = p99(latency.ms) by endpoint
 ```
 
-This is version 0.2.0, released on 8 October 2026. It has been checked on simulated and generated data; nobody has run it on production traffic yet. It hasn't had an outside security review either, so don't put it in front of anything that matters.
+This is version 0.3.0, released on 3 November 2026. It has been checked on simulated and generated data; nobody has run it on production traffic yet. It hasn't had an outside security review either, so don't put it in front of anything that matters.
 
 The whole project is open source under the Apache License 2.0. Copyright 2026 Precomputing.com.
 
@@ -49,10 +49,12 @@ To build it yourself, see Quick Start.
 |---|---|
 | SQL runtime | The compiler turns a policy into plain SQLite: tables, views and one trigger per stream. Events go in with `INSERT`. It runs in any SQLite 3.35 or newer with the math functions, the default build, including in the browser |
 | Engine | One Go binary with SQLite built in. It runs the same policy in memory and writes the same file at every checkpoint, 12 to 17 times faster than the triggers on Demo 2's trades. Senders number their events, so a crash loses nothing and counts nothing twice |
-| Meter | Exact streams for billing. A retried request counts once, a late report counts in the hour it happened, a month closes, and a quota is a view |
+| Meter | Exact streams for billing. A retried request counts once, a late report counts in the hour it happened, a month closes, a gateway whose clock runs ahead can't close it early, and a quota is a view |
 | Logs | A log reducer. It learns the templates of log lines, keeps every line on site for 48 hours and sends upstream the answers a dashboard shows. A dashboard definition can be imported as a policy |
 | Traces | A store for the model calls of AI agents. It keeps each message and tool list once, under the SHA-256 of its bytes, masks secrets first, rebuilds any call byte for byte, and meters every call by run, repository, model and source, with budgets |
-| MCP | An MCP server in `precomputing serve` and `precomputing mcp`: AI agents read any file's answers through five tools that only read, with read and write tokens for HTTP |
+| MCP | An MCP server in `precomputing serve` and `precomputing mcp`: AI agents read any file's answers through five tools that only read, with read and write tokens and HTTPS |
+| OpenTelemetry | `precomputing serve` takes logs and metrics over OTLP/HTTP, protobuf or JSON, into streams from logs and from metrics. Cumulative metrics become deltas per series, and an exporter's retry counts once |
+| Migration | `precomputing migrate` moves a running file to a new version of its policy: new streams, rollups, precomputes and quotas, longer or shorter retention, without starting over. A change that would alter what is already counted is refused with the reason |
 
 The two runtimes write the same file, value for value. Either one can carry on in a file the other wrote.
 
@@ -85,6 +87,14 @@ printf '1,1790290800,r-81f2,harbor,large,eu,2410,880\n' |
 # MCP: a file served to AI agents, read only, with a token file of lines such as "read TOKEN name"
 ./precomputing serve --read-only --token-file tokens usage.db     # MCP at http://localhost:8080/mcp
 ./precomputing mcp shop.db                                        # over stdio, for agents that start local tools
+
+# OpenTelemetry: point an OTLP/HTTP exporter at the server, over HTTPS
+./precomputing serve --policy examples/otel.precompute --addr :8443 --token-file tokens \
+  --tls-cert cert.pem --tls-key key.pem otel.db                   # POST /v1/logs and /v1/metrics
+
+# A new version of the policy for a file that is already running: stop its writer first
+./precomputing migrate --policy usage-v2.precompute --dry-run usage.db
+./precomputing migrate --policy usage-v2.precompute usage.db
 ```
 
 `precomputing serve` takes the same events over HTTP. `precomputing demo` runs Demo 2's whole trading day on your machine and checks it.
@@ -134,6 +144,8 @@ node tools/traces-prepare.mjs build/traces/nebius.jsonl --source nebius   # writ
 | `internal/sqlite/` | SQLite 3.53.4, compiled into the binary, and a small binding |
 | `mcp/` | The MCP server: its five tools, the 2026-07-28 revision and the older handshake, over HTTP and stdio |
 | `traces/` | The store of agent calls: pieces by SHA-256, calls rebuilt with SQL, secrets masked, every call metered |
+| `otlp/` | OTLP/HTTP intake: protobuf and JSON decoders, records to streams from logs, points to streams from metrics; `testdata/` holds requests written by the official OpenTelemetry classes |
+| `migrate/` | Policy migration: the old and new schemas compared as SQLite records them, and the changes that keep a file's meaning |
 | `cmd/precomputing/` | The command line and the HTTP server, with tokens |
 | `wasm/precomputing/` | The compiler, the Engine, the reducer, the import, the MCP server and the store of agent calls, built for the browser |
 | `examples/` | Example policies and Demo 4's dashboard |
@@ -168,7 +180,7 @@ To try the demos locally, serve the `demo` folder (`python3 -m http.server --dir
 
 ## Status
 
-Version 0.2.0. The language, both runtimes, the Meter and Logs are complete for what they cover, and 0.1.1 adds the MCP server, tokens for the HTTP server and Traces. Each document ends with the limits of this release. Logs has no forwarder yet: its batches are read from the file with SQL. The HTTP server takes tokens but has no TLS. Traces takes whole runs; a hook in the agent's path is not built yet. An OpenTelemetry Collector plug-in and TLS are on the roadmap.
+Version 0.3.0. The language, both runtimes, the Meter, Logs, Traces and the MCP server are complete for what they cover. 0.3.0 adds `ahead` for exact streams, HTTPS in `serve`, OpenTelemetry logs and metrics over OTLP/HTTP, and `precomputing migrate`. Each document ends with the limits of this release. Logs has no forwarder yet: its batches are read from the file with SQL. Traces takes whole runs; a hook in the agent's path is not built yet. OTLP histograms keep their count, sum, minimum and maximum, not their buckets.
 
 ## License
 

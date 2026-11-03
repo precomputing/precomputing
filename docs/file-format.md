@@ -1,6 +1,6 @@
 # The File Format
 
-A Precomputing file is an ordinary SQLite file. Any SQLite tool opens it and the same SQL works on it, whichever runtime wrote it. This page describes format 1, the layout written by versions 0.1 and 0.1.1; 0.1.1 only adds the tables of the store of agent calls. The file records its own format and policy, so a reader never has to guess.
+A Precomputing file is an ordinary SQLite file. Any SQLite tool opens it and the same SQL works on it, whichever runtime wrote it. This page describes format 1, the layout written by versions 0.1 to 0.3; 0.1.1 adds the tables of the store of agent calls, and 0.3 adds the tables of OTLP intake and of migrations, and the `ahead` reason. The file records its own format and policy, so a reader never has to guess.
 
 ## What Is in the File
 
@@ -70,7 +70,7 @@ An exact stream named `usage`, with identifier `request_id` and keys `customer` 
 |---|---|---|
 | `usage_ids` | table | `request_id` and `ts` of every event counted within the repeat window, to refuse repeats |
 | `usage_clock` | table | One row, `g = 1`, with `newest`: the newest event time counted, which the late and closed rules go by |
-| `usage_refused` | table | `reason` (`late`, `closed` or `repeat`), the stream's keys and `n`, the events refused |
+| `usage_refused` | table | `reason` (`ahead`, `late`, `closed` or `repeat`), the stream's keys and `n`, the events refused |
 | `monthly_tokens_limit` | table | A quota's limits: the precompute's `by` keys and `lim` |
 | `monthly_tokens` | view | For each key with a limit and each period: `used`, `lim`, `remaining` and `reached` |
 
@@ -85,6 +85,28 @@ A stream from logs has one more column, `line TEXT`, in its raw table, its sampl
 | `_precomputing_templates` | table | Every template learned: `id` (the number streams use as their `template` key), `service`, `level`, `template` (with `<*>` where lines differ), `initial` (the tokens it started from, which place it in the template tree), `n` (lines), `first_ts`, `last_ts` and `example` (its first line) |
 
 The Engine writes the templates at each checkpoint, in the same transaction as the rows. How lines are read is stored as JSON in `_precomputing_objects`, under the name `logs`.
+
+## OpenTelemetry Intake
+
+`precomputing serve` adds three tables to a file whose policy has streams from logs or from metrics, written in the same transaction as each checkpoint:
+
+| Name | Kind | Holds |
+|---|---|---|
+| `_precomputing_otlp_series` | table | Each cumulative series taken so far: `series` (the stream, the metric and every attribute), `start` and `time` of its last point in nanoseconds, and `a` and `b`, its total then (a histogram's count and sum) |
+| `_precomputing_otlp_requests` | table | `sha256` of each request counted in the last hour and when it came (`received`, in seconds), so a retry is known |
+| `_precomputing_otlp` | table | `since`: when the file began taking OTLP, in nanoseconds. A cumulative series that started before it sets a baseline first |
+
+A stream from metrics is recorded in `_precomputing_objects` with `from` set to `metrics`, `metric` and `where`.
+
+## Migrations
+
+`precomputing migrate` adds one table:
+
+| Name | Kind | Holds |
+|---|---|---|
+| `_precomputing_migrations` | table | One row per migration: `at` (seconds), `compiler`, `added` and `changed` (JSON lists of what started empty and what changed, in words) and `old_policy`, the text of the policy before |
+
+A migration rewrites `_precomputing` (the new policy and distill), `_precomputing_objects`, every view and trigger, and adds the new tables, in one transaction.
 
 ## Agent Calls from Traces
 

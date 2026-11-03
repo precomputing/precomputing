@@ -1,0 +1,33 @@
+# OpenTelemetry into Precomputing: an application's logs and metrics, sent by an OTLP/HTTP
+# exporter to precomputing serve (POST /v1/logs and /v1/metrics). Attribute names read with
+# their dots as _: http.route is http_route, service.name is service_name (and service).
+
+logs {}                                          # records come with their fields: no line format
+
+stream errors from logs where level = "ERROR" {
+  key    service text
+  key    template integer                         # the template learned from the body
+  raw    keep 2d                                  # every error kept whole for two days
+  rollup 1m keep 30d
+}
+
+stream requests from metrics "http.server.request.duration" {
+  key    service text
+  key    http_route text
+  key    http_response_status_code integer
+  value  count integer                            # requests in the interval
+  value  sum real                                 # seconds spent on them
+  rollup 1m keep 30d
+  rollup 1h keep 1y
+}
+
+stream queue from metrics "queue.depth" {
+  key    service text
+  value  depth real
+  rollup 1m keep 7d
+}
+
+precompute errors_hour   = count(errors) by service per hour
+precompute requests_day  = sum(requests.count) by service, http_route per day
+precompute seconds_day   = sum(requests.sum) by service, http_route per day
+precompute queue_max_day = max(queue.depth) by service per day

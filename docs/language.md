@@ -92,6 +92,7 @@ stream usage exact {
   derive tokens = input_tokens + output_tokens
 
   late   48h
+  ahead  10m
   period month close 24h
   raw    until closed + 90d
   rollup 1h keep 400d
@@ -102,10 +103,13 @@ stream usage exact {
 |---|---|
 | `id request_id refuse repeats 7d` | Every event carries an identifier, `text` (the default) or `integer`. An event whose identifier was counted in the last seven days is refused, so a retried request counts once |
 | `late 48h` | An event more than 48 hours older than the newest event counted so far is refused. Leave the line out to accept events of any age while their period is open |
+| `ahead 10m` | An event stamped more than 10 minutes past the clock of the machine counting it is refused. Leave the line out to accept any time, as 0.2 did |
 | `period month close 24h` | Periods are hours, days or months, in UTC. A period closes 24 hours after it ends, and from then on an event that falls in it is refused. Required |
 | `raw until closed + 90d` | Every event is kept whole until its period has been closed for 90 days, so any total can be checked event by event while it can still be disputed. Required |
 
-The rules are checked in that order: late, closed, repeat. A refused event changes one thing only, a counter in `usage_refused` by reason and by the stream's keys, so whatever was not counted is known exactly. "Newest" and "closed" go by the times on the events and never by the clock on the wall, so sending the same events again always gives the same file.
+The rules are checked in that order: ahead, late, closed, repeat. A refused event changes one thing only, a counter in `usage_refused` by reason and by the stream's keys, so whatever was not counted is known exactly. "Newest" and "closed" go by the times on the events and never by the clock on the wall, so sending the same events again always gives the same file.
+
+`ahead` is the one rule that reads the wall clock, and it's there because of that. Without it, one report stamped a year ahead by a gateway with a broken clock becomes the newest event, and every report after it is refused as late, or as closed once its month looks over. With `ahead 10m` that report is refused as `ahead` and moves nothing. A replay of old events is never affected, since they are in the past. A report refused as ahead and sent again once the clock has caught up is counted then, and its refusal stays in the count.
 
 Every summary and precompute of an exact stream is exact. Integer values are added exactly, and a sum stays exact up to 2^53, about nine million billion. Quantile sketches are approximate, so an exact stream allows neither `quantiles` nor percentile precomputes.
 
@@ -145,27 +149,73 @@ stream web from logs where service = "web" {
 
 A line's fields are the format's fields, each `key=value` pair in the message, and `template`, the number of its template, declared as `key template integer`. The line itself is kept with raw events, samples and anomalies. A stream from logs may have no values, only counting lines. The Engine reads the lines (`precomputing put --lines`); the compiled SQL takes the fields and the line in an insert, with the template number given by the caller. [Logs](logs.md) has the rest.
 
+`precomputing serve` also takes OpenTelemetry log records over OTLP/HTTP. A record's fields are the attributes of the record, its scope and its resource, with each dot or dash in a name read as `_` (`http.route` is `http_route`), plus `service` (from `service.name`), `level` (the severity text, or the severity number as TRACE, DEBUG, INFO, WARN, ERROR or FATAL) and `template`, learned from the body as from a line's message. A logs block needs a `format` only to read lines; for records alone it can be empty, `logs {}`.
+
+## Streams from Metrics
+
+```text
+stream request_time from metrics "http.server.request.duration" where http_request_method = "GET" {
+  key    http_route text
+  value  count integer
+  value  sum real
+  rollup 1m keep 30d
+}
+
+stream queue from metrics "queue.depth" {
+  key    queue text
+  value  depth real
+  rollup 1m keep 7d
+}
+```
+
+A stream from metrics takes the points of one OpenTelemetry metric, sent to `precomputing serve` over OTLP/HTTP. Its keys and its `where` read the attributes of the point, its scope and its resource, named as for log records. A point that lacks a key is refused and counted.
+
+| Metric | What fills the values |
+|---|---|
+| Gauge | The point's value fills the stream's one value |
+| Sum | The same. A cumulative sum becomes what happened since the series' last point |
+| Histogram | Values named `count`, `sum`, `min` and `max` get those of the point. A cumulative histogram gives `count` and `sum` since the last point; its `min` and `max` cover its whole life, so a stream that wants them needs delta points |
+| Summary, exponential histogram | Refused, and counted in the reply |
+
+A series is one metric with one set of attributes. The first cumulative point of a series that started before the file began taking metrics only sets where counting starts, since its total includes time before; one that started later counts in full. A new start time, or a monotonic total that goes down, means the series restarted, and the point counts in full. Each series' last point is kept in the file with the checkpoints, so a restart of the server goes on where it was. A stream from metrics has no `line` and no `template`, and it can't be exact: points carry no identifier.
+
 ## Letting Detail Fade
 
-Detail is removed by the distill statements, which the compiler writes separately (`precomputing compile --distill`) and also stores inside the file. Run them every few minutes with `:now` bound to the time of the newest event. They delete raw events and windows that have outlived their `keep`. In an exact stream they also delete identifiers older than the repeat window, and raw events whose period has been closed for longer than `raw until closed + D` allows. Anomalies, precomputed answers and refusal counts are never deleted.
+Detail is removed by the distill statements, which the compiler writes separately (`precomputing compile --distill`) and also stores inside the file. Run them every few minutes with `:now` bound to the time of the newest event counted. For an exact stream with `ahead` that is `newest` in its clock table, `usage_clock`, so a refused future time never makes detail fade early. They delete raw events and windows that have outlived their `keep`. In an exact stream they also delete identifiers older than the repeat window, and raw events whose period has been closed for longer than `raw until closed + D` allows. Anomalies, precomputed answers and refusal counts are never deleted.
+
+## Changing a Policy
+
+`precomputing migrate --policy NEW.precompute FILE.db` moves a file to a new version of its policy and keeps everything it holds. `--dry-run` says what it would do and changes nothing.
+
+| May change | Stays as it was |
+|---|---|
+| New streams, rollups, precomputes and quotas | Every stream, rollup, precompute and quota already there |
+| Raw events, samples and anomalies added to a stream | A stream's keys, values, derived values and types |
+| How long raw events and windows are kept | Quantile accuracy, and the quantiles of an existing rollup |
+| Sample counts, and an anomaly rule's z, memory, warmup and keep | What an anomaly rule judges: its value, `log` and `change` |
+| An exact stream's `ahead`, repeat window and `raw until closed` | An exact stream's id, `late`, `period` and `close` |
+| The log format, masks, `where` and the metric a stream takes | The templates' similarity and depth |
+
+Anything new starts empty at the migration. A new rollup's first window holds only what came after it, and a new `per month` precompute starts in the middle of its month; the file records when, in `_precomputing_migrations`, and `precomputing inspect` lists it. Removing anything is refused, since what it holds would go with it. So is a precompute that would add a column to state it shares with an older one (same stream, `by` and `per`); give it a `by` or `per` of its own. A refused migration says why and changes nothing, and one that fails part way leaves the file as it was. Stop the file's writer before migrating it and start it again after.
 
 ## Names and Durations
 
 Names start with a lowercase letter and use lowercase letters, digits and `_`, up to 48 characters. SQL words and the column names the compiler adds (`ts`, `n`, `w`, `b`, `res`, `value`, `period` and a few more) are refused with a clear message. Durations are a whole number and a unit: `s`, `m`, `h`, `d`, `w` (7 days) or `y` (365 days). Comments start with `#`.
 
-## Limits of Version 0.2.0
+## Limits of Version 0.3.0
 
-- A compiled file keeps the policy it was created with. To change the policy, start a new file.
+- A migration adds to a file and changes what happens from then on. It can't change what the file already counted, remove anything, or fill a new rollup or precompute from the events before it.
 - Values are numbers and may not be null. Sketches assume positive values; zero and negatives go to one bucket read as 0.
 - One anomaly rule per stream. Time is in seconds, periods in UTC.
-- An exact stream's clock is the newest event time it has counted. One event stamped far in the future moves that clock for every sender and can close a period early, so exact streams need senders whose clocks are right.
+- An exact stream's clock is the newest event time it has counted. Without `ahead`, one event stamped far in the future moves that clock for every sender and can close a period early. `ahead` needs the clock of the machine that counts to be right.
+- Streams from metrics take gauges, sums and histograms. Exponential histograms and summaries are refused, and a histogram's buckets are not kept: percentiles of OTLP histograms are not available.
 - The SQL runs in SQLite 3.35 or newer with the math functions, which is the default build and the one in browsers, Python and most systems.
 
 ## Grammar
 
 ```text
 policy      = { stream | precompute | quota | logs } .
-stream      = "stream" name [ "exact" ] [ "from" "logs" [ "where" cond { "and" cond } ] ] "{" { line } "}" .
+stream      = "stream" name [ "exact" ] [ "from" ( "logs" | "metrics" text ) [ "where" cond { "and" cond } ] ] "{" { line } "}" .
 cond        = name "=" text .
 logs        = "logs" "{" { "format" text | "mask" text | "templates" { "similarity" number | "depth" int } } "}" .
 line        = "key" name [ "text" | "integer" ]
@@ -173,6 +223,7 @@ line        = "key" name [ "text" | "integer" ]
             | "derive" name "=" expr
             | "id" name [ "text" | "integer" ] "refuse" "repeats" duration
             | "late" duration
+            | "ahead" duration
             | "period" ( "hour" | "day" | "month" ) "close" duration
             | "raw" "keep" ( duration | "forever" )
             | "raw" "until" "closed" [ "+" duration ]

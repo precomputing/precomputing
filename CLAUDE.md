@@ -97,15 +97,12 @@ Design decisions:
 - Version 0.3.0.
 
 Steps:
-1. [ ] Phase 0 and upkeep (this file, go.mod, workflows, README status).
-2. [ ] A1 clock guard in the language, compiler and Engine, with tests (refused
-   as ahead in both runtimes, equivalence, order of checks, no clock move).
-3. [ ] A2 TLS in serve, with tests (handshake, reload, refused plain HTTP).
-4. [ ] B OTLP logs and metrics, with tests (protobuf and JSON fixtures, gzip,
-   cumulative to delta, restarts, unknown kinds, tokens).
-5. [ ] C migrate, with tests (each allowed and refused change, triggers and
-   Engine equal after a migration, a crash during it leaves the old file).
-6. [ ] Docs: README, language, engine, meter, logs, file-format, CHANGELOG.
+1. [x] Phase 0 and upkeep (this file, go.mod 1.26, workflows on stable Go, README status) (a611b7a).
+2. [x] A1 clock guard (940f4cb): TestAheadMatchesSQL (3 planted reports refused as ahead in both runtimes, files equal, no clock moved, the same events without the rule close September early), TestAheadWallClock, parser tests. Distill's :now is the newest counted event (the test feeder had bound it to a refused time).
+3. [x] A2 TLS (200ae8b): cmd/precomputing/tls.go, files compared by content at each handshake; TestTLS (renewal, half-written pair keeps the last good one, TLS 1.1 and plain HTTP refused); checked with curl and an openssl certificate.
+4. [x] B OTLP (1819256): otlp/ (decode.go, json.go, intake.go), fixtures from the official opentelemetry-proto classes (otlp/testdata/generate.py), both encodings decode equal; intake tests for logs, cumulative baseline, delta, restart, a series newer than the intake, rejections, request digests; serve endpoints with write tokens, gzip, 415/400/413, partial success; checked with curl. Added beyond the plan: request digests for an hour so a retry counts once, and series state in the file.
+5. [x] C migrate (92ab2b2): migrate/ (schemas compared in scratch databases and against the file, policy-level rules in compare.go), CLI with --dry-run, inspect lists migrations; tests: both runtimes equal after a migration and old tables equal to a never-migrated file, 15 refusals, failure part way at four points leaves the file unchanged, a name in use.
+6. [x] Docs: README, language (ahead, streams from metrics, OTLP records, Changing a Policy), engine (TLS, OpenTelemetry), meter, logs, file-format, CHANGELOG; examples/otel.precompute with golden SQL.
 7. [ ] Independent review (at most two rounds), fixes, fresh results.
 8. [ ] 0.3.0 released by the workflow, downloads checked.
 9. [ ] precomputing.com post with its own SVG, pages; softdevstudio.com note;
