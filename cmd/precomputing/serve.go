@@ -34,6 +34,9 @@ GET  /v1/stats                              counters and senders
 POST /mcp                                   the Model Context Protocol, for AI agents: tools
      that describe the file, read its answers and windows, and fetch what it keeps whole
 
+With --tls-cert and --tls-key the server speaks HTTPS only, TLS 1.2 or later, and reads the
+pair again when the files change.
+
 With a token file, every request needs "Authorization: Bearer TOKEN". A read token may
 read and use /mcp; a write token may also post events.
 `
@@ -48,6 +51,8 @@ func serveCmd(args []string) int {
 	tokenFile := fs.String("token-file", "", "file of tokens, one per line: read TOKEN or write TOKEN")
 	origins := fs.String("allow-origin", "", "comma-separated origins of web pages that may call /mcp (local pages always may)")
 	rate := fs.Float64("rate", 20, "tool calls a second allowed on /mcp for each token or address")
+	tlsCert := fs.String("tls-cert", "", "certificate file (PEM, chain included) to serve HTTPS with; read again when it changes")
+	tlsKey := fs.String("tls-key", "", "the certificate's private key file (PEM)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -56,6 +61,19 @@ func serveCmd(args []string) int {
 		return 2
 	}
 	path := fs.Arg(0)
+	if (*tlsCert == "") != (*tlsKey == "") {
+		fmt.Fprintln(os.Stderr, "precomputing serve: give --tls-cert and --tls-key together")
+		return 2
+	}
+	var certs *certFiles
+	if *tlsCert != "" {
+		var err error
+		if certs, err = newCertFiles(*tlsCert, *tlsKey); err != nil {
+			return fail("TLS: %v", err)
+		}
+	} else if !loopback(*addr) {
+		log.Printf("precomputing: warning: no --tls-cert, so tokens and answers cross the network in plain text to %s", *addr)
+	}
 	var tokens []token
 	if *tokenFile != "" {
 		var err error
@@ -274,13 +292,24 @@ func serveCmd(args []string) int {
 	}))
 
 	srv := &http.Server{Addr: *addr, Handler: authorize(tokens, mux), ReadHeaderTimeout: 10 * time.Second}
+	scheme := "http"
+	if certs != nil {
+		srv.TLSConfig = certs.tlsConfig()
+		scheme = "https"
+	}
 	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
+	go func() {
+		if certs != nil {
+			errc <- srv.ListenAndServeTLS("", "")
+		} else {
+			errc <- srv.ListenAndServe()
+		}
+	}()
 	mode := ""
 	if eng == nil {
 		mode = " (read only)"
 	}
-	log.Printf("precomputing: serving %s%s on %s; agents connect to http://%s/mcp", path, mode, *addr, hostPort(*addr))
+	log.Printf("precomputing: serving %s%s on %s; agents connect to %s://%s/mcp", path, mode, *addr, scheme, hostPort(*addr))
 	select {
 	case err := <-errc:
 		return fail("%v", err)
