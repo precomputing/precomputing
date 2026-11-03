@@ -58,7 +58,7 @@ The two runtimes write the same file, value for value. Either one can carry on i
 
 ## Quick Start
 
-To build from source you need Go 1.24 and a C compiler; SQLite comes with the source.
+To build from source you need Go 1.26 or later and a C compiler; SQLite comes with the source.
 
 ```sh
 go build -o precomputing ./cmd/precomputing
