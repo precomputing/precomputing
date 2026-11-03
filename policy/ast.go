@@ -62,6 +62,11 @@ type Stream struct {
 	FromLogs bool
 	Where    []Cond
 	FromPos  Pos
+
+	// A stream from metrics takes its events from OpenTelemetry metric points of one metric, sent
+	// to the Engine's server over OTLP: each point that meets Where gives one event, its keys read
+	// from the point's attributes (dots in their names read as _).
+	FromMetrics string
 }
 
 // Quota puts a limit on a sum or count precompute, per key and period. The limits live in a

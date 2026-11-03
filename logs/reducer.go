@@ -193,22 +193,25 @@ func New(eng *engine.Engine) (*Reducer, error) {
 	if pol.Logs == nil {
 		return nil, fmt.Errorf("the policy has no logs block")
 	}
-	re, names, err := policy.LogFormat(pol.Logs.Format)
-	if err != nil {
-		return nil, err
-	}
-	r := &Reducer{eng: eng, lg: pol.Logs, format: re, kv: kvRE, miners: map[string]*drain.Parser{},
+	r := &Reducer{eng: eng, lg: pol.Logs, kv: kvRE, miners: map[string]*drain.Parser{},
 		byCluster: map[*drain.Cluster]*Template{}, fields: map[string]string{}}
-	r.names = re.SubexpNames()
-	idx := func(name string) int { return re.SubexpIndex(name) }
-	r.msg, r.ts, r.date, r.tm, r.svc, r.level = idx("message"), idx("timestamp"), idx("date"), idx("time"), idx("service"), idx("level")
-	_ = names
+	var names []string
+	if pol.Logs.Format != "" {
+		re, fields, err := policy.LogFormat(pol.Logs.Format)
+		if err != nil {
+			return nil, err
+		}
+		r.format, names = re, fields
+		r.names = re.SubexpNames()
+		idx := func(name string) int { return re.SubexpIndex(name) }
+		r.msg, r.ts, r.date, r.tm, r.svc, r.level = idx("message"), idx("timestamp"), idx("date"), idx("time"), idx("service"), idx("level")
+	}
 	for _, m := range pol.Logs.Masks {
 		r.masks = append(r.masks, regexp.MustCompile(m))
 	}
 	// A format of fields separated by single spaces, ending with the message, is read by splitting
 	// at the first runs of white space, which is what its regular expression matches, only faster.
-	if simpleFormat.MatchString(pol.Logs.Format) && names[len(names)-1] == "message" {
+	if r.format != nil && simpleFormat.MatchString(pol.Logs.Format) && names[len(names)-1] == "message" {
 		r.simple = len(names)
 		r.parts = make([]string, len(names)+1)
 	}
@@ -225,7 +228,7 @@ func New(eng *engine.Engine) (*Reducer, error) {
 		}
 		r.routes = append(r.routes, rt)
 	}
-	err = eng.Store().Query("SELECT id, service, level, template, initial, n, first_ts, last_ts, example FROM "+compile.TemplatesTable+" ORDER BY id", nil, func(row []any) error {
+	err := eng.Store().Query("SELECT id, service, level, template, initial, n, first_ts, last_ts, example FROM "+compile.TemplatesTable+" ORDER BY id", nil, func(row []any) error {
 		id := asInt(row[0])
 		if id != int64(len(r.templates))+1 {
 			return fmt.Errorf("the templates in the file are not numbered 1, 2, 3...")
@@ -291,6 +294,9 @@ func (r *Reducer) Put(src string, seq int64, line string) (Result, error) {
 	if seq > 0 && seq <= r.eng.Applied(src) {
 		return Result{Repeat: true}, r.eng.PutEvents(src, seq, nil)
 	}
+	if r.format == nil {
+		return Result{}, fmt.Errorf("the policy's logs block has no format, so lines cannot be read; records sent over OTLP need none")
+	}
 	text := strings.TrimRight(line, "\r\n")
 	var m []string
 	if r.simple > 0 {
@@ -327,6 +333,35 @@ func (r *Reducer) Put(src string, seq int64, line string) (Result, error) {
 	if r.level > 0 {
 		level = m[r.level]
 	}
+	return r.reduce(src, seq, ts, svc, level, msg, text)
+}
+
+// PutRecord reads one log record that came with its fields already apart, such as an
+// OpenTelemetry record: the service, the level, the message, and fields that streams can be keyed
+// and filtered by. text is what raw events, samples and anomalies keep as the line. Key=value
+// pairs in the message become fields as in a line, and the record's own fields win over them.
+// seq works as in Put.
+func (r *Reducer) PutRecord(src string, seq, ts int64, svc, level, message string, fields map[string]string, text string) (Result, error) {
+	r.stats.Lines++
+	r.evs = r.evs[:0]
+	if seq > 0 && seq <= r.eng.Applied(src) {
+		return Result{Repeat: true}, r.eng.PutEvents(src, seq, nil)
+	}
+	clear(r.fields)
+	msg := r.maskPairs(message)
+	for _, mk := range r.masks {
+		msg = mk.ReplaceAllLiteralString(msg, drain.Wildcard)
+	}
+	for k, v := range fields {
+		r.fields[k] = v
+	}
+	r.fields["service"], r.fields["level"] = svc, level
+	return r.reduce(src, seq, ts, svc, level, msg, text)
+}
+
+// reduce learns the template of a message whose fields are in r.fields and gives the streams their
+// events.
+func (r *Reducer) reduce(src string, seq, ts int64, svc, level, msg, text string) (Result, error) {
 	c, created := r.miner(svc, level).Add(strings.Fields(msg))
 	t := r.byCluster[c]
 	if created {

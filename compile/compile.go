@@ -384,6 +384,15 @@ func (c *compiler) stream(out, trig, distill *strings.Builder, s *policy.Stream)
 		detail["from"] = "logs"
 		detail["where"] = where
 	}
+	if s.FromMetrics != "" {
+		where := map[string]string{}
+		for _, w := range s.Where {
+			where[w.Field] = w.Value
+		}
+		detail["from"] = "metrics"
+		detail["metric"] = s.FromMetrics
+		detail["where"] = where
+	}
 	if s.Exact {
 		detail["exact"] = true
 		detail["period"] = s.Period

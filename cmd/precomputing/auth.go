@@ -84,12 +84,17 @@ func authorize(tokens []token, next http.Handler) http.Handler {
 			http.Error(w, "this server needs a token: Authorization: Bearer TOKEN", http.StatusUnauthorized)
 			return
 		}
-		if r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/v1/events") && found.scope != "write" {
+		if r.Method == http.MethodPost && writes(r.URL.Path) && found.scope != "write" {
 			http.Error(w, "this token may read, not write", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), clientKey{}, fmt.Sprintf("%x", found.hash[:8]))))
 	})
+}
+
+// writes says whether a POST to path puts events in the file.
+func writes(path string) bool {
+	return strings.HasPrefix(path, "/v1/events") || path == "/v1/logs" || path == "/v1/metrics"
 }
 
 type clientKey struct{}

@@ -1,0 +1,648 @@
+// Package otlp takes OpenTelemetry logs and metrics, as OTLP/HTTP sends them, into an Engine.
+// It decodes the protobuf and JSON encodings by hand, so the binary needs nothing outside the
+// standard library, and reads only the fields it uses: everything else is skipped.
+package otlp
+
+import (
+	"encoding/base64"
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+	"unicode/utf8"
+)
+
+// KV is an attribute with its value as text.
+type KV struct{ Key, Value string }
+
+// LogRecord is one OTLP log record with the attributes of its resource and scope.
+type LogRecord struct {
+	Time, Observed uint64 // nanoseconds since 1970
+	SeverityNumber int64
+	SeverityText   string
+	Body           string
+	Resource       []KV
+	Scope          []KV
+	Attrs          []KV
+}
+
+// Point is one data point of a metric.
+type Point struct {
+	Attrs       []KV
+	Start, Time uint64 // nanoseconds since 1970
+	Value       float64
+	HasValue    bool    // a gauge or a sum point with a value
+	Count       float64 // histogram points
+	Sum         float64
+	Min, Max    float64
+	HasSum      bool
+	HasMin      bool
+	HasMax      bool
+	NoValue     bool // the flag that says the point has no recorded value
+}
+
+// Kinds of metrics.
+const (
+	Gauge     = "gauge"
+	Sum       = "sum"
+	Histogram = "histogram"
+	ExpHist   = "exponential histogram"
+	Summary   = "summary"
+)
+
+// Temporality of sums and histograms.
+const (
+	Unspecified = 0
+	Delta       = 1
+	Cumulative  = 2
+)
+
+// Metric is one OTLP metric with the attributes of its resource and scope.
+type Metric struct {
+	Name        string
+	Kind        string
+	Temporality int64
+	Monotonic   bool
+	Resource    []KV
+	Scope       []KV
+	Points      []Point
+}
+
+// maxDepth bounds how deeply attribute values (arrays and maps) may nest.
+const maxDepth = 16
+
+var errTruncated = errors.New("the message ends in the middle of a field")
+
+// wire reads protobuf fields one at a time.
+type wire struct {
+	b []byte
+	i int
+}
+
+// Wire types.
+const (
+	wtVarint  = 0
+	wtFixed64 = 1
+	wtBytes   = 2
+	wtFixed32 = 5
+)
+
+func (w *wire) more() bool { return w.i < len(w.b) }
+
+func (w *wire) uvarint() (uint64, error) {
+	v, n := binary.Uvarint(w.b[w.i:])
+	if n <= 0 {
+		return 0, errTruncated
+	}
+	w.i += n
+	return v, nil
+}
+
+// field reads the next field's number and wire type.
+func (w *wire) field() (int, int, error) {
+	v, err := w.uvarint()
+	if err != nil {
+		return 0, 0, err
+	}
+	if v>>3 == 0 || v>>3 > math.MaxInt32 {
+		return 0, 0, fmt.Errorf("field number %d", v>>3)
+	}
+	return int(v >> 3), int(v & 7), nil
+}
+
+func (w *wire) fixed64() (uint64, error) {
+	if len(w.b)-w.i < 8 {
+		return 0, errTruncated
+	}
+	v := binary.LittleEndian.Uint64(w.b[w.i:])
+	w.i += 8
+	return v, nil
+}
+
+func (w *wire) bytes() ([]byte, error) {
+	n, err := w.uvarint()
+	if err != nil {
+		return nil, err
+	}
+	if n > uint64(len(w.b)-w.i) {
+		return nil, errTruncated
+	}
+	b := w.b[w.i : w.i+int(n)]
+	w.i += int(n)
+	return b, nil
+}
+
+// skip passes over a field of the given wire type.
+func (w *wire) skip(wt int) error {
+	switch wt {
+	case wtVarint:
+		_, err := w.uvarint()
+		return err
+	case wtFixed64:
+		_, err := w.fixed64()
+		return err
+	case wtBytes:
+		_, err := w.bytes()
+		return err
+	case wtFixed32:
+		if len(w.b)-w.i < 4 {
+			return errTruncated
+		}
+		w.i += 4
+		return nil
+	}
+	return fmt.Errorf("wire type %d is not one OTLP uses", wt)
+}
+
+// each calls fn for every field of a message; fn reads the field or returns false to skip it.
+func each(b []byte, fn func(w *wire, num, wt int) (bool, error)) error {
+	w := &wire{b: b}
+	for w.more() {
+		num, wt, err := w.field()
+		if err != nil {
+			return err
+		}
+		read, err := fn(w, num, wt)
+		if err != nil {
+			return err
+		}
+		if !read {
+			if err := w.skip(wt); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// sub reads a field that holds a message.
+func sub(w *wire, wt int) ([]byte, error) {
+	if wt != wtBytes {
+		return nil, fmt.Errorf("a message field has wire type %d", wt)
+	}
+	return w.bytes()
+}
+
+func text(w *wire, wt int) (string, error) {
+	b, err := sub(w, wt)
+	if err != nil {
+		return "", err
+	}
+	if !utf8.Valid(b) {
+		return "", errors.New("a string is not UTF-8")
+	}
+	return string(b), nil
+}
+
+func fix64(w *wire, wt int) (uint64, error) {
+	if wt != wtFixed64 {
+		return 0, fmt.Errorf("a fixed64 field has wire type %d", wt)
+	}
+	return w.fixed64()
+}
+
+func vint(w *wire, wt int) (uint64, error) {
+	if wt != wtVarint {
+		return 0, fmt.Errorf("a varint field has wire type %d", wt)
+	}
+	return w.uvarint()
+}
+
+func double(w *wire, wt int) (float64, error) {
+	v, err := fix64(w, wt)
+	return math.Float64frombits(v), err
+}
+
+// anyValue reads an AnyValue as text: strings as they are, numbers and booleans as Go prints them,
+// bytes in base64, arrays and maps as JSON.
+func anyValue(b []byte, depth int) (string, error) {
+	if depth > maxDepth {
+		return "", errors.New("attribute values nest too deeply")
+	}
+	out := ""
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		var err error
+		switch num {
+		case 1:
+			out, err = text(w, wt)
+		case 2:
+			var v uint64
+			v, err = vint(w, wt)
+			out = strconv.FormatBool(v != 0)
+		case 3:
+			var v uint64
+			v, err = vint(w, wt)
+			out = strconv.FormatInt(int64(v), 10)
+		case 4:
+			var v float64
+			v, err = double(w, wt)
+			out = strconv.FormatFloat(v, 'g', -1, 64)
+		case 5, 6:
+			var m []byte
+			if m, err = sub(w, wt); err == nil {
+				out, err = composite(m, num == 6, depth+1)
+			}
+		case 7:
+			var v []byte
+			v, err = sub(w, wt)
+			out = base64.StdEncoding.EncodeToString(v)
+		default:
+			return false, nil
+		}
+		return true, err
+	})
+	return out, err
+}
+
+// composite writes an ArrayValue or a KeyValueList as JSON.
+func composite(b []byte, kv bool, depth int) (string, error) {
+	var parts []string
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		if num != 1 {
+			return false, nil
+		}
+		m, err := sub(w, wt)
+		if err != nil {
+			return true, err
+		}
+		if kv {
+			k, err := keyValue(m, depth)
+			if err != nil {
+				return true, err
+			}
+			parts = append(parts, strconv.Quote(k.Key)+":"+strconv.Quote(k.Value))
+			return true, nil
+		}
+		v, err := anyValue(m, depth)
+		parts = append(parts, strconv.Quote(v))
+		return true, err
+	})
+	if kv {
+		return "{" + strings.Join(parts, ",") + "}", err
+	}
+	return "[" + strings.Join(parts, ",") + "]", err
+}
+
+func keyValue(b []byte, depth int) (KV, error) {
+	var kv KV
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		var err error
+		switch num {
+		case 1:
+			kv.Key, err = text(w, wt)
+		case 2:
+			var m []byte
+			if m, err = sub(w, wt); err == nil {
+				kv.Value, err = anyValue(m, depth)
+			}
+		default:
+			return false, nil
+		}
+		return true, err
+	})
+	return kv, err
+}
+
+// attrs reads a repeated KeyValue field into list.
+func attrs(w *wire, wt int, list *[]KV) error {
+	m, err := sub(w, wt)
+	if err != nil {
+		return err
+	}
+	kv, err := keyValue(m, 0)
+	if err != nil {
+		return err
+	}
+	*list = append(*list, kv)
+	return nil
+}
+
+// resource reads a Resource: its attributes.
+func resource(b []byte) ([]KV, error) {
+	var out []KV
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		if num != 1 {
+			return false, nil
+		}
+		return true, attrs(w, wt, &out)
+	})
+	return out, err
+}
+
+// scope reads an InstrumentationScope as attributes: otel.scope.name and version, then its own.
+func scope(b []byte) ([]KV, error) {
+	var out []KV
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		var err error
+		switch num {
+		case 1, 2:
+			var s string
+			if s, err = text(w, wt); err == nil && s != "" {
+				name := "otel.scope.name"
+				if num == 2 {
+					name = "otel.scope.version"
+				}
+				out = append(out, KV{name, s})
+			}
+		case 3:
+			err = attrs(w, wt, &out)
+		default:
+			return false, nil
+		}
+		return true, err
+	})
+	return out, err
+}
+
+// DecodeLogs reads an ExportLogsServiceRequest in protobuf.
+func DecodeLogs(b []byte) ([]LogRecord, error) {
+	var out []LogRecord
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		if num != 1 {
+			return false, nil
+		}
+		rl, err := sub(w, wt)
+		if err != nil {
+			return true, err
+		}
+		var res []KV
+		var scopes [][]byte
+		err = each(rl, func(w *wire, num, wt int) (bool, error) {
+			var err error
+			switch num {
+			case 1:
+				var m []byte
+				if m, err = sub(w, wt); err == nil {
+					res, err = resource(m)
+				}
+			case 2:
+				var m []byte
+				if m, err = sub(w, wt); err == nil {
+					scopes = append(scopes, m)
+				}
+			default:
+				return false, nil
+			}
+			return true, err
+		})
+		if err != nil {
+			return true, err
+		}
+		for _, sl := range scopes {
+			var sc []KV
+			var recs [][]byte
+			err := each(sl, func(w *wire, num, wt int) (bool, error) {
+				var err error
+				switch num {
+				case 1:
+					var m []byte
+					if m, err = sub(w, wt); err == nil {
+						sc, err = scope(m)
+					}
+				case 2:
+					var m []byte
+					if m, err = sub(w, wt); err == nil {
+						recs = append(recs, m)
+					}
+				default:
+					return false, nil
+				}
+				return true, err
+			})
+			if err != nil {
+				return true, err
+			}
+			for _, rec := range recs {
+				r := LogRecord{Resource: res, Scope: sc}
+				err := each(rec, func(w *wire, num, wt int) (bool, error) {
+					var err error
+					switch num {
+					case 1:
+						r.Time, err = fix64(w, wt)
+					case 11:
+						r.Observed, err = fix64(w, wt)
+					case 2:
+						var v uint64
+						v, err = vint(w, wt)
+						r.SeverityNumber = int64(int32(v))
+					case 3:
+						r.SeverityText, err = text(w, wt)
+					case 5:
+						var m []byte
+						if m, err = sub(w, wt); err == nil {
+							r.Body, err = anyValue(m, 0)
+						}
+					case 6:
+						err = attrs(w, wt, &r.Attrs)
+					default:
+						return false, nil
+					}
+					return true, err
+				})
+				if err != nil {
+					return true, err
+				}
+				out = append(out, r)
+			}
+		}
+		return true, nil
+	})
+	return out, err
+}
+
+// DecodeMetrics reads an ExportMetricsServiceRequest in protobuf.
+func DecodeMetrics(b []byte) ([]Metric, error) {
+	var out []Metric
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		if num != 1 {
+			return false, nil
+		}
+		rm, err := sub(w, wt)
+		if err != nil {
+			return true, err
+		}
+		var res []KV
+		var scopes [][]byte
+		err = each(rm, func(w *wire, num, wt int) (bool, error) {
+			var err error
+			switch num {
+			case 1:
+				var m []byte
+				if m, err = sub(w, wt); err == nil {
+					res, err = resource(m)
+				}
+			case 2:
+				var m []byte
+				if m, err = sub(w, wt); err == nil {
+					scopes = append(scopes, m)
+				}
+			default:
+				return false, nil
+			}
+			return true, err
+		})
+		if err != nil {
+			return true, err
+		}
+		for _, sm := range scopes {
+			var sc []KV
+			var ms [][]byte
+			err := each(sm, func(w *wire, num, wt int) (bool, error) {
+				var err error
+				switch num {
+				case 1:
+					var m []byte
+					if m, err = sub(w, wt); err == nil {
+						sc, err = scope(m)
+					}
+				case 2:
+					var m []byte
+					if m, err = sub(w, wt); err == nil {
+						ms = append(ms, m)
+					}
+				default:
+					return false, nil
+				}
+				return true, err
+			})
+			if err != nil {
+				return true, err
+			}
+			for _, mb := range ms {
+				m, err := metric(mb)
+				if err != nil {
+					return true, err
+				}
+				m.Resource, m.Scope = res, sc
+				out = append(out, m)
+			}
+		}
+		return true, nil
+	})
+	return out, err
+}
+
+func metric(b []byte) (Metric, error) {
+	var m Metric
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		var err error
+		switch num {
+		case 1:
+			m.Name, err = text(w, wt)
+		case 5, 7, 9, 10, 11:
+			m.Kind = map[int]string{5: Gauge, 7: Sum, 9: Histogram, 10: ExpHist, 11: Summary}[num]
+			var d []byte
+			if d, err = sub(w, wt); err == nil {
+				err = metricData(d, &m, num)
+			}
+		default:
+			return false, nil
+		}
+		return true, err
+	})
+	return m, err
+}
+
+// metricData reads a Gauge, Sum or Histogram. The other kinds are kept with their points left out:
+// Precomputing does not take them, and says so.
+func metricData(b []byte, m *Metric, kind int) error {
+	return each(b, func(w *wire, num, wt int) (bool, error) {
+		var err error
+		switch {
+		case num == 1 && (kind == 5 || kind == 7 || kind == 9):
+			var d []byte
+			if d, err = sub(w, wt); err == nil {
+				var p Point
+				if kind == 9 {
+					p, err = histogramPoint(d)
+				} else {
+					p, err = numberPoint(d)
+				}
+				m.Points = append(m.Points, p)
+			}
+		case num == 1:
+			if _, err = sub(w, wt); err == nil {
+				m.Points = append(m.Points, Point{}) // counted, not read
+			}
+		case num == 2 && kind != 5 && kind != 11:
+			var v uint64
+			v, err = vint(w, wt)
+			m.Temporality = int64(v)
+		case num == 3 && kind == 7:
+			var v uint64
+			v, err = vint(w, wt)
+			m.Monotonic = v != 0
+		default:
+			return false, nil
+		}
+		return true, err
+	})
+}
+
+func numberPoint(b []byte) (Point, error) {
+	var p Point
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		var err error
+		switch num {
+		case 7:
+			err = attrs(w, wt, &p.Attrs)
+		case 2:
+			p.Start, err = fix64(w, wt)
+		case 3:
+			p.Time, err = fix64(w, wt)
+		case 4:
+			p.Value, err = double(w, wt)
+			p.HasValue = true
+		case 6:
+			var v uint64
+			v, err = fix64(w, wt)
+			p.Value, p.HasValue = float64(int64(v)), true
+		case 8:
+			var v uint64
+			v, err = vint(w, wt)
+			p.NoValue = v&1 != 0
+		default:
+			return false, nil
+		}
+		return true, err
+	})
+	return p, err
+}
+
+func histogramPoint(b []byte) (Point, error) {
+	var p Point
+	err := each(b, func(w *wire, num, wt int) (bool, error) {
+		var err error
+		switch num {
+		case 9:
+			err = attrs(w, wt, &p.Attrs)
+		case 2:
+			p.Start, err = fix64(w, wt)
+		case 3:
+			p.Time, err = fix64(w, wt)
+		case 4:
+			var v uint64
+			v, err = fix64(w, wt)
+			p.Count = float64(v)
+		case 5:
+			p.Sum, err = double(w, wt)
+			p.HasSum = true
+		case 11:
+			p.Min, err = double(w, wt)
+			p.HasMin = true
+		case 12:
+			p.Max, err = double(w, wt)
+			p.HasMax = true
+		case 10:
+			var v uint64
+			v, err = vint(w, wt)
+			p.NoValue = v&1 != 0
+		default:
+			return false, nil
+		}
+		return true, err
+	})
+	return p, err
+}

@@ -21,6 +21,7 @@ import (
 	"precomputing.com/precomputing/internal/sqlite"
 	"precomputing.com/precomputing/internal/version"
 	"precomputing.com/precomputing/mcp"
+	"precomputing.com/precomputing/otlp"
 )
 
 const serveHelp = `Precomputing Engine
@@ -31,6 +32,8 @@ POST /v1/events?source=NAME[&stream=NAME]   events, one per line: JSON objects, 
 GET  /v1/answers/NAME                       the rows of a precompute, as JSON
 GET  /v1/query?sql=SELECT...                a read-only query, as JSON
 GET  /v1/stats                              counters and senders
+POST /v1/logs, /v1/metrics                  OpenTelemetry logs and metrics over OTLP/HTTP, protobuf or
+     JSON, for the policy's streams from logs and from metrics
 POST /mcp                                   the Model Context Protocol, for AI agents: tools
      that describe the file, read its answers and windows, and fetch what it keeps whole
 
@@ -84,6 +87,7 @@ func serveCmd(args []string) int {
 		log.Printf("precomputing: warning: no --token-file, so anyone who can reach %s can use this server", *addr)
 	}
 	var eng *engine.Engine
+	var intake *otlp.Intake
 	if !*readOnly {
 		var st interface{ Close() error }
 		var err error
@@ -92,6 +96,14 @@ func serveCmd(args []string) int {
 			return fail("%v", err)
 		}
 		defer st.Close()
+		for _, s := range eng.Policy().Streams {
+			if s.FromLogs || s.FromMetrics != "" {
+				if intake, err = otlp.New(eng); err != nil {
+					return fail("OTLP: %v", err)
+				}
+				break
+			}
+		}
 	} else if _, err := os.Stat(path); err != nil {
 		return fail("%v", err)
 	}
@@ -228,6 +240,44 @@ func serveCmd(args []string) int {
 			"refused": refused, "committed": committed,
 		})
 	})
+	takeOTLP := func(signal string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			body, isJSON, ok := otlpBody(w, r)
+			if !ok {
+				return
+			}
+			if eng == nil {
+				otlpError(w, isJSON, http.StatusMethodNotAllowed, "this server only reads its file (--read-only)")
+				return
+			}
+			if intake == nil || (signal == "logs" && !intake.TakesLogs()) || (signal == "metrics" && !intake.TakesMetrics()) {
+				otlpError(w, isJSON, http.StatusNotFound, "no stream in this file's policy takes OTLP "+signal)
+				return
+			}
+			mu.Lock()
+			res, code, err := otlpTake(intake, signal, body, isJSON)
+			if err != nil {
+				mu.Unlock()
+				otlpError(w, isJSON, code, err.Error())
+				return
+			}
+			// Answer once the events are in the file, as for /v1/events: an exporter that gets no
+			// answer sends the request again, and the intake knows it by its digest.
+			start := generation
+			for generation == start {
+				done.Wait()
+			}
+			ckErr := lastErr
+			mu.Unlock()
+			if ckErr != nil {
+				otlpError(w, isJSON, http.StatusServiceUnavailable, "checkpoint: "+ckErr.Error())
+				return
+			}
+			otlpReply(w, isJSON, signal, res)
+		}
+	}
+	mux.HandleFunc("POST /v1/logs", takeOTLP("logs"))
+	mux.HandleFunc("POST /v1/metrics", takeOTLP("metrics"))
 	read := func(w http.ResponseWriter, sql string) {
 		roMu.Lock()
 		res, err := query(ro, sql)
@@ -260,10 +310,15 @@ func serveCmd(args []string) int {
 	mux.HandleFunc("GET /v1/stats", func(w http.ResponseWriter, r *http.Request) {
 		var s engine.Stats
 		var pending int64
+		var os_ *otlp.Stats
 		if eng != nil {
 			mu.Lock()
 			s = eng.Stats()
 			pending = eng.Pending()
+			if intake != nil {
+				x := intake.Stats()
+				os_ = &x
+			}
 			mu.Unlock()
 		}
 		roMu.Lock()
@@ -277,7 +332,7 @@ func serveCmd(args []string) int {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"events": s.Events, "skipped": s.Duplicates, "checkpoints": s.Checkpoints, "rows_written": s.RowsWritten,
-			"pending": pending, "sources": sources,
+			"pending": pending, "sources": sources, "otlp": otlpStats(os_),
 		})
 	})
 

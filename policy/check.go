@@ -94,7 +94,8 @@ func LogFormat(format string) (*regexp.Regexp, []string, error) {
 
 func checkLogs(lg *Logs) error {
 	if lg.Format == "" {
-		return &Error{lg.Pos, `the logs block needs a format, such as format "<timestamp> <level> <service> <message>"`}
+		// Records sent over OTLP need no format; reading lines does (put --lines says so).
+		return checkMasks(lg)
 	}
 	_, fields, err := LogFormat(lg.Format)
 	if err != nil {
@@ -122,6 +123,10 @@ func checkLogs(lg *Logs) error {
 		}
 	}
 	lg.Fields = fields
+	return checkMasks(lg)
+}
+
+func checkMasks(lg *Logs) error {
 	for i, m := range lg.Masks {
 		if _, err := regexp.Compile(m); err != nil {
 			return &Error{lg.MaskPos[i], fmt.Sprintf("the mask is not a regular expression: %v", err)}
@@ -137,6 +142,20 @@ func checkLogs(lg *Logs) error {
 }
 
 func checkFromLogs(pol *Policy, s *Stream) error {
+	if s.FromMetrics != "" {
+		if s.Exact {
+			return &Error{s.ExactPos, "a stream from metrics cannot be exact: metric points carry no identifier"}
+		}
+		if len(s.Values) == 0 {
+			return &Error{s.FromPos, "a stream from metrics needs a value: one for a gauge or a sum, or count, sum, min and max of a histogram"}
+		}
+		for _, f := range s.Keys {
+			if f.Name == "template" || f.Name == "line" {
+				return &Error{f.Pos, f.Name + " belongs to streams from logs"}
+			}
+		}
+		return nil
+	}
 	if !s.FromLogs {
 		return nil
 	}

@@ -192,7 +192,7 @@ func TestErrors(t *testing.T) {
 		{"stream s { value v } precompute s = count(s)", "1:22", "same name as a stream"},
 		{"stream s { value v } precompute x = count(s) per week", "1:46", "per takes hour, day or month"},
 		{`stream s from logs { key service }`, "1:10", "needs a logs block"},
-		{`logs { mask "a" }`, "1:1", "needs a format"},
+		{`logs { mask "(" }`, "1:13", "not a regular expression"},
 		{`logs { format "<timestamp> <level>" }`, "1:15", "needs a <message> field"},
 		{`logs { format "<level> <message>" }`, "1:15", "the time of each line"},
 		{`logs { format "<timestamp> <message>" mask "a(" }`, "1:44", "not a regular expression"},
@@ -240,6 +240,26 @@ func TestAhead(t *testing.T) {
 	for src, want := range map[string]string{
 		"stream u {\n  key c text\n  value t real\n  ahead 5m\n  rollup 1m keep 1h\n}":                                                 "ahead belongs in an exact stream",
 		"stream u exact {\n  key c text\n  value t integer\n  ahead 5m\n  ahead 6m\n  period day close 1h\n  raw until closed + 1d\n}": "ahead is declared twice",
+	} {
+		if _, err := Parse(src); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%q: got %v, want %q", src, err, want)
+		}
+	}
+}
+
+func TestFromMetrics(t *testing.T) {
+	p, err := Parse("logs {\n  mask \"[0-9]+\"\n}\nstream web from logs where service = \"web\" {\n  key level text\n  rollup 1m keep 1d\n}\nstream lat from metrics \"http.server.request.duration\" where http_request_method = \"GET\" {\n  key http_route text\n  value count integer\n  value sum real\n  rollup 1m keep 1d\n}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Logs.Format != "" || p.Streams[1].FromMetrics != "http.server.request.duration" || len(p.Streams[1].Where) != 1 {
+		t.Errorf("parsed %+v", p.Streams[1])
+	}
+	for src, want := range map[string]string{
+		"stream mm from metrics {\n  value v real\n}":                                                                "the metric's name in double quotes",
+		"stream mm from traces {\n  value v real\n}":                                                                 "expected logs or metrics after from",
+		"stream mm from metrics \"x\" {\n  key k text\n  rollup 1m keep 1d\n}":                                       "needs at least one value",
+		"stream mm exact from metrics \"x\" {\n  value v integer\n  period day close 1h\n  raw until closed + 1d\n}": "cannot be exact",
 	} {
 		if _, err := Parse(src); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("%q: got %v, want %q", src, err, want)

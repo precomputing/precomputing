@@ -237,14 +237,28 @@ func (p *parser) stream() (*Stream, error) {
 	}
 	if p.isWord("from") {
 		ft := p.next()
-		if err := p.word("logs"); err != nil {
-			return nil, err
+		s.FromPos = ft.Pos
+		switch {
+		case p.isWord("logs"):
+			p.next()
+			s.FromLogs = true
+		case p.isWord("metrics"):
+			p.next()
+			m, err := p.expect(String, "the metric's name in double quotes, such as \"http.server.request.duration\"")
+			if err != nil {
+				return nil, err
+			}
+			if strings.TrimSpace(m.Text) == "" {
+				return nil, errAt(m, "the metric's name is empty")
+			}
+			s.FromMetrics = m.Text
+		default:
+			return nil, errAt(p.next(), "expected logs or metrics after from")
 		}
-		s.FromLogs, s.FromPos = true, ft.Pos
 		if p.isWord("where") {
 			p.next()
 			for {
-				f, err := p.name("a log field")
+				f, err := p.name("a field")
 				if err != nil {
 					return nil, err
 				}
