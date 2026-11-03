@@ -451,6 +451,9 @@ func (d *dec) logs(b []byte) ([]LogRecord, error) {
 			case 2:
 				var m []byte
 				if m, err = sub(w, wt); err == nil {
+					if d.messages++; d.messages > MaxMessages {
+						return true, errTooMany
+					}
 					scopes = append(scopes, m)
 				}
 			default:
@@ -475,6 +478,9 @@ func (d *dec) logs(b []byte) ([]LogRecord, error) {
 				case 2:
 					var m []byte
 					if m, err = sub(w, wt); err == nil {
+						if d.messages++; d.messages > MaxMessages {
+							return true, errTooMany
+						}
 						recs = append(recs, m)
 					}
 				default:
@@ -553,6 +559,9 @@ func (d *dec) metrics(b []byte) ([]Metric, error) {
 			case 2:
 				var m []byte
 				if m, err = sub(w, wt); err == nil {
+					if d.messages++; d.messages > MaxMessages {
+						return true, errTooMany
+					}
 					scopes = append(scopes, m)
 				}
 			default:
@@ -577,6 +586,9 @@ func (d *dec) metrics(b []byte) ([]Metric, error) {
 				case 2:
 					var m []byte
 					if m, err = sub(w, wt); err == nil {
+						if d.messages++; d.messages > MaxMessages {
+							return true, errTooMany
+						}
 						ms = append(ms, m)
 					}
 				default:
