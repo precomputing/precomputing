@@ -6,8 +6,9 @@ the owner says go.
 
 ## Where the next session starts
 
-Precomputing 0.3 (softdev-plan item 28, photozeitgeist/jollyroger.biz) is in
-progress; the steps below say what is done.
+Precomputing 0.3.0 is released (ahead, HTTPS, OTLP logs and metrics,
+migrate) and softdev-plan item 28 is done. Nothing is in progress; what comes
+next is decided with the owner.
 
 ## Releases
 
@@ -45,7 +46,7 @@ Rules worth knowing before changing anything:
   `go 1.24` in it. CI on current stable Go is the real check.
 - Golden SQL files record the compiler version; they change with `Version`.
 
-## In progress: Precomputing 0.3 (softdev-plan item 28, approved by YK 2026-11-03)
+## Done: Precomputing 0.3 (softdev-plan item 28, approved by YK 2026-11-03)
 
 What and why: one future-stamped event can close a billing month early, since
 an exact stream's clock is its newest event; `serve` has tokens but no TLS, so
@@ -108,5 +109,4 @@ Steps:
    Review round 1: blocker, nested array/map attribute values were quoted again at every level, so a 1 KB request became a 33 MB value (2^15 blowup); now nested JSON is written once and an array or map is capped at 64 KB (TestNestedValuesStaySmall). Should-fix, all fixed: empty points amplified 250x (now 200,000 records or points a request, unread kinds counted not allocated, JSON objects counted before decoding; TestTooManyItems); decoding ran under the Engine lock (now before it); a stream from metrics added later counted series from before it existed (start time per stream, reset when its metric or where changes; TestStreamAddedLater); series state grew forever (forgotten after 7 days, then a new baseline; TestSeriesExpire); a new precompute sharing old state was called new (plan says it answers from the start; TestMigrateSharedState); triggers on compiled tables that the policy doesn't make were dropped or left beside the new ones (now refused; TestMigrateForeignTrigger). Nits fixed: JSON integer overflow, two data oneofs in one metric, a text-only policy edit is stored, ahead docs on sequence numbers, a bad TLS pair parsed once. Left: a repeated request answers {} without the first reply's partial success (harmless); 404 for a signal no stream takes and 405 when read-only (defensible).
    Review round 2: the round-1 fixes hold (the reviewer also migrated files made by the v0.2.0 binary with the new one). One blocker: the item cap counted records and points only, so a 30 KB gzip of empty metrics, scopes or attributes still got serve OOM-killed; now every message the decoder reads or collects counts against 400,000 a request, and JSON objects against the same (TestEmptyMessages); the 29 KB gzip of 15M empty metrics is now refused in 0.3 s with the server at 86 MB. Should-fix: decoding outside the lock let many requests decode at once; now at most two read and decode together. Nits: maxObjects counts braces inside strings too (documented as erring on the side of less); hourly series expiry adds a checkpoint (harmless); a stream's since is when serve first opens after a migration (the safe side, as documented). Two rounds done.
 8. [x] 0.3.0 released by the workflow (commit 336606c, release run 41603956795). All five archives match SHA256SUMS at the tag and at latest. The downloaded Linux binary printed 0.3.0, passed tools/check-0.3.sh (15 checks, 0 failed) and ran precomputing demo (122,793 rows, 576,218 values identical).
-9. [ ] precomputing.com post with its own SVG, pages; softdevstudio.com note;
-   softdev-plan log row.
+9. [x] precomputing.com post "Precomputing Now Takes OpenTelemetry and Lets a Running File Change Its Policy" with precomputing-0-3.svg (rasterized and inspected); About, Platform, Roadmap, Download (Go 1.26) and Contact pages (site 99fba31); softdevstudio.com note and listing (549bfaf); softdev-plan item 28 done with a log row (caa0385).
