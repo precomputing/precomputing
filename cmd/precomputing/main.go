@@ -36,11 +36,14 @@ Usage:
       The log templates a file has learned, with how often each was seen.
 
   precomputing serve [--policy POLICY] [--addr localhost:8080] [--every 100ms] [--sync full]
-                     [--read-only] [--token-file FILE] [--allow-origin ORIGINS] FILE.db
+                     [--read-only] [--token-file FILE] [--allow-origin ORIGINS]
+                     [--tls-cert FILE --tls-key FILE] FILE.db
       The same over HTTP. POST /v1/events (JSON or CSV lines) answers once the
       events are in the file; GET /v1/answers/NAME, /v1/query?sql=..., /v1/stats read.
-      POST /mcp serves AI agents over the Model Context Protocol. --read-only serves a
-      file without taking events. With --token-file every request needs a token.
+      POST /v1/logs and /v1/metrics take OpenTelemetry over OTLP/HTTP for the streams
+      from logs and from metrics. POST /mcp serves AI agents over the Model Context
+      Protocol. --read-only serves a file without taking events. With --token-file
+      every request needs a token; with --tls-cert and --tls-key it speaks HTTPS.
 
   precomputing mcp FILE.db
       Serve a file to an AI agent over stdio, for agents that start local tools.
@@ -57,6 +60,11 @@ Usage:
       Print a precompute, a table, or the result of a read-only query.
   precomputing stats FILE.db
       Rows and bytes per table, and where each sender is.
+  precomputing migrate --policy NEW.precompute [--dry-run] FILE.db
+      Move a file to a new version of its policy and keep everything it holds: add
+      streams, rollups, precomputes and quotas, change how long detail is kept. What
+      is new starts empty now; a change that would alter what is already counted is
+      refused with the reason. Stop the file's writer first.
   precomputing inspect FILE.db
       The policy a file was made from and what it holds.
 
@@ -97,6 +105,8 @@ func main() {
 		code = statsCmd(args)
 	case "inspect":
 		code = inspectCmd(args)
+	case "migrate":
+		code = migrateCmd(args)
 	case "import":
 		code = importCmd(args)
 	case "templates":

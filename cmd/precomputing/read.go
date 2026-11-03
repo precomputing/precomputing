@@ -227,5 +227,6 @@ func inspectCmd(args []string) int {
 		fmt.Println()
 		objs.print()
 	}
+	printMigrations(db)
 	return 0
 }
