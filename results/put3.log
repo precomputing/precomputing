@@ -1,8 +1,11 @@
 ready 0
-ok 56253
-ok 114337
-ok 171705
-ok 242537
-ok 313498
+ok 44896
+ok 83728
+ok 122735
+ok 167352
+ok 221343
+ok 277424
+ok 317798
+ok 366617
 ok 373351
-precomputing: 373351 lines, 365490 events applied, 0 skipped as already applied, 7861 refused by the stream, 0 not read, 6 checkpoints
+precomputing: 373351 lines, 365490 events applied, 0 skipped as already applied, 7861 refused by the stream, 0 not read, 9 checkpoints

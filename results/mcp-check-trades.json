@@ -1,5 +1,5 @@
 {
- "file": "build/verify/trades.sqlite",
+ "file": "/tmp/claude-0/-home-claude/a9fcd3a9-a16d-58a3-8b66-130b722d3aea/scratchpad/pcverify/build/verify/trades.sqlite",
  "denied": 401,
  "readTokenPosting": 403,
  "same": true,
@@ -15,7 +15,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 93.66947399999998,
+   "ms": 88.03839800000003,
    "calls": 5,
    "bytes": 1900
   },
@@ -30,7 +30,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 44.46963699999998,
+   "ms": 40.96411599999999,
    "calls": 5,
    "bytes": 1900
   },
@@ -45,7 +45,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 53.49160799999993,
+   "ms": 53.85977500000001,
    "calls": 5,
    "bytes": 1900
   },
@@ -60,7 +60,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 41.85240600000009,
+   "ms": 51.070115999999985,
    "calls": 5,
    "bytes": 1900
   },
@@ -75,7 +75,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 35.63112899999999,
+   "ms": 34.49613499999998,
    "calls": 5,
    "bytes": 1900
   }

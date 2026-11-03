@@ -1,4 +1,4 @@
--- Compiled by Precomputing 0.2.0 from otel.precompute.
+-- Compiled by Precomputing 0.3.0 from otel.precompute.
 -- File format 1. Every statement is safe to run again on the same file.
 
 -- Stream errors. Insert events with:
@@ -128,7 +128,7 @@ END;
 CREATE TABLE IF NOT EXISTS _precomputing (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT OR REPLACE INTO _precomputing (key, value) VALUES
   ('format', '1'),
-  ('compiler', 'precomputing 0.2.0'),
+  ('compiler', 'precomputing 0.3.0'),
   ('policy', '# OpenTelemetry into Precomputing: an application''s logs and metrics, sent by an OTLP/HTTP
 # exporter to precomputing serve (POST /v1/logs and /v1/metrics). Attribute names read with
 # their dots as _: http.route is http_route, service.name is service_name (and service).

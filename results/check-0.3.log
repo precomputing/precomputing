@@ -1,0 +1,37 @@
+precomputing 0.3.0 (file format 1, SQLite 3.53.4)
+== HTTPS and OTLP
+ok    logs, protobuf, over HTTPS: 200
+ok    metrics, gzipped JSON: 200
+ok    metrics, protobuf: 200
+ok    the same request again: 200
+ok    a read token posting metrics: 403
+ok    text/plain: 415
+ok    plain HTTP to the HTTPS port: 400
+ok    requests counted: the first cumulative point a baseline, the repeat once: 15
+ok    errors by service from log records: checkout=1 web=1
+a request of 15 million empty metrics, 29210 bytes gzipped:
+ok      refused: 400
+ok      server memory under 256 MB after it: yes
+2026/11/03 10:27:19 precomputing: stopped; every event received is in o.db
+== ahead and migrate
+Starts empty now:
+  precompute calls_day = count(usage) by customer per day, counting from the migration
+Changes from now on:
+  stream usage refuses events more than 1h ahead of the clock
+Dry run: nothing was changed.
+Starts empty now:
+  precompute calls_day = count(usage) by customer per day, counting from the migration
+Changes from now on:
+  stream usage refuses events more than 1h ahead of the clock
+Migrated u.db. Stop any writer before migrating and start it again after.
+precomputing: cannot migrate: stream usage's period stays month: its totals are counted per month
+Nothing was changed.
+ok    a period change refused: 1
+ok    calls_day after the migration: 1
+ok    a report stamped in 2100: ahead 1
+Migrations:
+
+  2026-11-03T08:27:19Z, by precomputing 0.3.0
+    started: precompute calls_day = count(usage) by customer per day, counting from the migration
+    changed: stream usage refuses events more than 1h ahead of the clock
+0 failed

@@ -1,11 +1,11 @@
 {
   "sqlite": "3.53.4",
   "trades": 4048210,
-  "wallMs": 17763,
-  "engineMs": 12196,
-  "engineTradesPerSec": 331921,
-  "checkpoints": 51,
-  "checkpointMs": 7035,
+  "wallMs": 18907,
+  "engineMs": 12757,
+  "engineTradesPerSec": 317337,
+  "checkpoints": 53,
+  "checkpointMs": 7489,
   "fileBytes": 9961472,
   "plainBytes": 114743760,
   "reduction": 11.518755461040296,
@@ -57,25 +57,25 @@
   "plugs": [
     {
       "by": "script",
-      "t": 13717,
-      "lost": 62016,
-      "cutRows": 12939,
-      "resent": 62016,
-      "openMs": 62,
-      "recoverMs": 280,
-      "checked": 25263,
+      "t": 13741,
+      "lost": 36929,
+      "cutRows": 11066,
+      "resent": 36929,
+      "openMs": 70,
+      "recoverMs": 241,
+      "checked": 25301,
       "diffs": 0
     }
   ],
   "tables": [
     {
       "name": "trades_win",
-      "bytes": 4636672,
+      "bytes": 5103616,
       "rows": 31974
     },
     {
       "name": "trades_raw",
-      "bytes": 3670016,
+      "bytes": 3678208,
       "rows": 124303
     },
     {
@@ -126,11 +126,11 @@
   ],
   "race": {
     "trades": 200332,
-    "engineMs": 632,
-    "sqlMs": 9272,
-    "engineRate": 317092,
-    "sqlRate": 21606,
-    "speedup": 14.676004473553492,
+    "engineMs": 655,
+    "sqlMs": 10010,
+    "engineRate": 305755,
+    "sqlRate": 20013,
+    "speedup": 15.277649409432877,
     "tables": [
       {
         "name": "_pc_trades",

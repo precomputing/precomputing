@@ -5,9 +5,9 @@
   "rawBytes": 192531388,
   "templates": 25,
   "bytes": 3653632,
-  "sha256": "92a7479e2c98455b",
+  "sha256": "c5a475ade7b1c7d0",
   "sameAsShipped": true,
-  "buildMs": 32808.021861999994,
+  "buildMs": 38617.303005,
   "counts": {
    "cells": 18669,
    "equal": 18669
@@ -47,10 +47,10 @@
   "lines": 242635,
   "historyLines": 2133322,
   "rawBytes": 21897625,
-  "engineMs": 2978.763514999744,
+  "engineMs": 3422.5550529996544,
   "checks": 721,
-  "checkMs": 2679.514584000026,
-  "maxCheckMs": 15.999511000001803,
+  "checkMs": 2861.1824410001354,
+  "maxCheckMs": 18.99717800000508,
   "fileBytes": 3768320,
   "templates": 27,
   "outcomes": [
@@ -1673,7 +1673,7 @@
    }
   ],
   "sqlite": "3.53.4",
-  "wallMs": 6576.170849000002
+  "wallMs": 7372.083182000002
  },
  "trials": {
   "known": 80,
@@ -1764,7 +1764,7 @@
    41,
    50
   ],
-  "checkMs": 57370.614243999844,
+  "checkMs": 64185.18942000153,
   "checks": 14420,
   "days": [
    {

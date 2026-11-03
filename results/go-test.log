@@ -1,18 +1,39 @@
-# go vet ./... and go test -count=1 ./... on go1.24.7, 5 October 2026
+# go vet ./... , go test -count=1 ./... and go test -race -short -count=1 ./... on go1.24.7 linux/amd64, 3 November 2026, Precomputing 0.3.0 (the commit that raised the version)
 go vet: done
-ok  	precomputing.com/precomputing/cmd/precomputing	0.262s
-ok  	precomputing.com/precomputing/compile	0.005s
+ok  	precomputing.com/precomputing/cmd/precomputing	0.287s
+ok  	precomputing.com/precomputing/compile	0.012s
 ?   	precomputing.com/precomputing/engine	[no test files]
-ok  	precomputing.com/precomputing/engine/sqlitestore	29.844s
-ok  	precomputing.com/precomputing/internal/drain	0.009s
+ok  	precomputing.com/precomputing/engine/sqlitestore	35.110s
+ok  	precomputing.com/precomputing/internal/drain	0.003s
 ?   	precomputing.com/precomputing/internal/filecmp	[no test files]
-ok  	precomputing.com/precomputing/internal/market	0.281s
-ok  	precomputing.com/precomputing/internal/sqlite	0.006s
+ok  	precomputing.com/precomputing/internal/market	0.328s
+ok  	precomputing.com/precomputing/internal/sqlite	0.013s
 ?   	precomputing.com/precomputing/internal/version	[no test files]
-ok  	precomputing.com/precomputing/logs	1.903s
-ok  	precomputing.com/precomputing/mcp	3.987s
-ok  	precomputing.com/precomputing/policy	0.004s
+ok  	precomputing.com/precomputing/logs	2.085s
+ok  	precomputing.com/precomputing/mcp	4.961s
+ok  	precomputing.com/precomputing/migrate	7.766s
+ok  	precomputing.com/precomputing/otlp	0.814s
+ok  	precomputing.com/precomputing/policy	0.005s
 ?   	precomputing.com/precomputing/tools/crashlab	[no test files]
 ?   	precomputing.com/precomputing/tools/filecompare	[no test files]
 ?   	precomputing.com/precomputing/tools/logbits	[no test files]
-ok  	precomputing.com/precomputing/traces	2.323s
+ok  	precomputing.com/precomputing/traces	2.730s
+# race
+ok  	precomputing.com/precomputing/cmd/precomputing	1.326s
+ok  	precomputing.com/precomputing/compile	1.036s
+?   	precomputing.com/precomputing/engine	[no test files]
+ok  	precomputing.com/precomputing/engine/sqlitestore	61.612s
+ok  	precomputing.com/precomputing/internal/drain	1.014s
+?   	precomputing.com/precomputing/internal/filecmp	[no test files]
+ok  	precomputing.com/precomputing/internal/market	2.970s
+ok  	precomputing.com/precomputing/internal/sqlite	1.020s
+?   	precomputing.com/precomputing/internal/version	[no test files]
+ok  	precomputing.com/precomputing/logs	11.226s
+ok  	precomputing.com/precomputing/mcp	6.322s
+ok  	precomputing.com/precomputing/migrate	12.596s
+ok  	precomputing.com/precomputing/otlp	3.368s
+ok  	precomputing.com/precomputing/policy	1.020s
+?   	precomputing.com/precomputing/tools/crashlab	[no test files]
+?   	precomputing.com/precomputing/tools/filecompare	[no test files]
+?   	precomputing.com/precomputing/tools/logbits	[no test files]
+ok  	precomputing.com/precomputing/traces	28.403s

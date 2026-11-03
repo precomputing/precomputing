@@ -4,7 +4,7 @@
  "sentBytes": 212306,
  "sentEvents": 7896,
  "batches": 124,
- "engineMs": 6192.625451000034,
+ "engineMs": 6811.026193999979,
  "fileBytes": 39796736,
  "rawRows": 281164,
  "templates": 19,
@@ -131,6 +131,7 @@
  ],
  "alerts": [
   {
+   "id": 17,
    "service": "checkout",
    "level": "WARN",
    "text": "order failed order=<*> reason=<*>",
@@ -138,20 +139,19 @@
    "firstTs": 1790685601,
    "lastTs": 1790685601,
    "example": "2026-09-29T12:40:01.540Z WARN  checkout order failed order=A-13077 reason=payment_error",
-   "id": 17,
    "first": 2401,
    "sent": 2405,
    "caughtAfter": 4
   },
   {
-   "service": "payments",
-   "level": "ERROR",
-   "text": "charge failed provider=<*> result=<*> status=<*> amount=<*>",
-   "n": 1,
    "firstTs": 1790685603,
    "lastTs": 1790685603,
    "example": "2026-09-29T12:40:03.011Z ERROR payments charge failed provider=northpay result=error status=503 amount=149.47",
    "id": 18,
+   "service": "payments",
+   "level": "ERROR",
+   "text": "charge failed provider=<*> result=<*> status=<*> amount=<*>",
+   "n": 1,
    "first": 2403,
    "sent": 2405,
    "caughtAfter": 2
@@ -160,7 +160,7 @@
  "search": {
   "text": "northpay",
   "n": 4792,
-  "ms": 86.19108699999924
+  "ms": 92.4245350000001
  },
  "tables": [
   {
@@ -303,7 +303,7 @@
   "at": 3900
  },
  "sqlite": "3.53.4",
- "wallMs": 8494.476592,
+ "wallMs": 9731.514723999999,
  "news": [
   {
    "t": 2401,

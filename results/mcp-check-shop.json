@@ -1,5 +1,5 @@
 {
- "file": "build/verify/shop.sqlite",
+ "file": "/tmp/claude-0/-home-claude/a9fcd3a9-a16d-58a3-8b66-130b722d3aea/scratchpad/pcverify/build/verify/shop.sqlite",
  "denied": 401,
  "readTokenPosting": 403,
  "same": true,
@@ -15,7 +15,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 91.75639799999999,
+   "ms": 95.59433100000001,
    "calls": 5,
    "bytes": 4369
   },
@@ -30,7 +30,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 57.47119999999995,
+   "ms": 54.737460999999996,
    "calls": 5,
    "bytes": 4369
   },
@@ -45,7 +45,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 60.44152700000001,
+   "ms": 62.19586799999996,
    "calls": 5,
    "bytes": 4369
   },
@@ -60,7 +60,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 51.566067999999916,
+   "ms": 61.59346000000005,
    "calls": 5,
    "bytes": 4369
   },
@@ -75,7 +75,7 @@
     "get_kept",
     "query"
    ],
-   "ms": 49.973037999999974,
+   "ms": 53.97623799999997,
    "calls": 5,
    "bytes": 4369
   }

@@ -1,0 +1,92 @@
+{
+  "version": "0.2.0",
+  "sqlite": "3.53.4",
+  "machine": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cpus": 2,
+  "trades": 4048210,
+  "seconds": 12.630867611,
+  "trades_per_second": 320501.3404205492,
+  "checkpoints": 400,
+  "checkpoint_every_trades": 10000,
+  "sync": "full",
+  "file_bytes": 11091968,
+  "candles_checked": 27174,
+  "candle_differences": 0,
+  "quote_board_differences": 0,
+  "trades_total_ok": true,
+  "race": {
+    "trades": 200332,
+    "engine_seconds": 0.372114081,
+    "sql_seconds": 6.5492619130000005,
+    "engine_trades_per_second": 538361.782659872,
+    "sql_trades_per_second": 30588.48503254232,
+    "rows_compared": 122793,
+    "values_compared": 576218,
+    "identical": true,
+    "tables": [
+      {
+        "Name": "_pc_trades",
+        "Rows": 1,
+        "Values": 2,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "_pc_trades_by_symbol",
+        "Rows": 8,
+        "Values": 32,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "_pc_trades_by_symbol_per_day",
+        "Rows": 8,
+        "Values": 72,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "_precomputing",
+        "Rows": 4,
+        "Values": 8,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "_precomputing_objects",
+        "Rows": 11,
+        "Values": 44,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "trades_anomaly",
+        "Rows": 0,
+        "Values": 0,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "trades_base",
+        "Rows": 8,
+        "Values": 40,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "trades_raw",
+        "Rows": 118705,
+        "Values": 474820,
+        "Diffs": 0,
+        "First": ""
+      },
+      {
+        "Name": "trades_win",
+        "Rows": 4048,
+        "Values": 101200,
+        "Diffs": 0,
+        "First": ""
+      }
+    ]
+  }
+}

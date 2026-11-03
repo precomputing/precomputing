@@ -12,7 +12,7 @@
  "rawRows": 350339,
  "rawDistinct": 350339,
  "reports": 373351,
- "ingestMs": 21509.826695999993,
+ "ingestMs": 24887.354114999995,
  "lines": 12,
  "recountDiffs": 0,
  "rawDiffs": 0,
@@ -155,10 +155,10 @@
    "reachedAt": null
   }
  ],
- "invoiceMs": 0.5660990799999854,
- "rawInvoiceMs": 263.43441600000006,
+ "invoiceMs": 0.6249326999999902,
+ "rawInvoiceMs": 282.755634000001,
  "slowOk": true,
- "quotaUs": 5.732152999999926,
+ "quotaUs": 6.782654849999926,
  "hourRows": 8215,
  "hourDiffs": 0,
  "fileBytes": 25321472,
@@ -332,7 +332,7 @@
  "laterOct": 15151,
  "disputeEnd": 1798675200,
  "sqlite": "3.53.4",
- "wallMs": 23114.39469,
+ "wallMs": 26858.556465,
  "news": [
   {
    "t": 1260000,
