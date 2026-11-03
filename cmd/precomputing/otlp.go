@@ -128,13 +128,10 @@ func otlpDecode(signal string, body []byte, isJSON bool) ([]otlp.LogRecord, []ot
 	return nil, m, err
 }
 
-// otlpTake decodes and takes one request under the Engine's lock, which the caller holds.
-func otlpTake(in *otlp.Intake, signal string, body []byte, isJSON bool) (otlp.Result, int, error) {
-	recs, ms, err := otlpDecode(signal, body, isJSON)
-	if err != nil {
-		return otlp.Result{}, http.StatusBadRequest, fmt.Errorf("not an OTLP %s request: %v", signal, err)
-	}
+// otlpTake takes one decoded request under the Engine's lock, which the caller holds.
+func otlpTake(in *otlp.Intake, signal string, body []byte, recs []otlp.LogRecord, ms []otlp.Metric) (otlp.Result, int, error) {
 	var res otlp.Result
+	var err error
 	if signal == "logs" {
 		res, err = in.Logs(body, recs)
 	} else {

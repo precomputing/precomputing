@@ -254,8 +254,14 @@ func serveCmd(args []string) int {
 				otlpError(w, isJSON, http.StatusNotFound, "no stream in this file's policy takes OTLP "+signal)
 				return
 			}
+			// Decoding needs no lock: only taking the records into the Engine does.
+			recs, ms, err := otlpDecode(signal, body, isJSON)
+			if err != nil {
+				otlpError(w, isJSON, http.StatusBadRequest, fmt.Sprintf("not an OTLP %s request: %v", signal, err))
+				return
+			}
 			mu.Lock()
-			res, code, err := otlpTake(intake, signal, body, isJSON)
+			res, code, err := otlpTake(intake, signal, body, recs, ms)
 			if err != nil {
 				mu.Unlock()
 				otlpError(w, isJSON, code, err.Error())

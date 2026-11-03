@@ -44,7 +44,7 @@ type Plan struct {
 	objects [][]any  // _precomputing_objects rows
 }
 
-type object struct{ kind, name, sql string }
+type object struct{ kind, name, table, sql string }
 
 // Prepare works out the migration of the file in db to the policy text src. It changes nothing.
 func Prepare(db *sqlite.DB, src string) (*Plan, error) {
@@ -101,6 +101,20 @@ func Prepare(db *sqlite.DB, src string) (*Plan, error) {
 			why = append(why, fmt.Sprintf("%s %s in the file is not what the file's own policy makes", o.kind, o.name))
 		}
 	}
+	// A trigger on a compiled table or view that the file's policy doesn't make (written by hand, or by
+	// a compiler that named it otherwise) would be dropped with its view, or go on running beside the
+	// new triggers and count events twice. Either way it is the owner's to remove.
+	for _, f := range fileObjs {
+		if f.kind != "trigger" {
+			continue
+		}
+		if _, ours := oldBy[f.table]; !ours {
+			continue
+		}
+		if o, ok := oldBy[f.name]; !ok || o.sql != f.sql {
+			why = append(why, fmt.Sprintf("trigger %s on %s is not one the file's policy makes; drop it first, or keep it on a table of your own", f.name, f.table))
+		}
+	}
 	for _, n := range newObjs {
 		if _, ok := oldBy[n.name]; ok {
 			continue
@@ -142,6 +156,9 @@ func Prepare(db *sqlite.DB, src string) (*Plan, error) {
 	return p, nil
 }
 
+// SameText says whether the new policy is word for word the one the file holds.
+func (p *Plan) SameText() bool { return p.old.Source == p.new.Source }
+
 // sharedState explains a changed precompute table: precomputes that share a stream, by and per
 // share one table, so a new one there may need a column the old ones never filled.
 func sharedState(table string, pol *policy.Policy) string {
@@ -150,17 +167,7 @@ func sharedState(table string, pol *policy.Policy) string {
 	}
 	var names []string
 	for _, pc := range pol.Precomputes {
-		name := "_pc_" + pc.Stream
-		if pc.Func == "quantile" {
-			name = "_pcq_" + pc.Stream + "_" + pc.Field
-		}
-		if len(pc.By) > 0 {
-			name += "_by_" + strings.Join(pc.By, "_")
-		}
-		if pc.Per != "" {
-			name += "_per_" + pc.Per
-		}
-		if name == table {
+		if StateTable(pc) == table {
 			names = append(names, pc.Name)
 		}
 	}
@@ -265,13 +272,13 @@ func schemaOf(pol *policy.Policy) ([]object, error) {
 }
 
 func objects(db *sqlite.DB) ([]object, error) {
-	rs, err := rows(db, "SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY rowid")
+	rs, err := rows(db, "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY rowid")
 	if err != nil {
 		return nil, err
 	}
 	out := make([]object, len(rs))
 	for i, r := range rs {
-		out[i] = object{r[0].(string), r[1].(string), r[2].(string)}
+		out[i] = object{r[0].(string), r[1].(string), r[2].(string), r[3].(string)}
 	}
 	return out, nil
 }

@@ -28,13 +28,18 @@ const (
 // a few minutes.
 const RepeatWindow = 3600
 
+// SeriesExpiry is how long a cumulative series is remembered after its last point, in seconds. A
+// series seen again after that sets a new baseline, as one never seen does, so it is never counted
+// twice; series that come and go, such as one per pod, don't pile up.
+const SeriesExpiry = 7 * 86400
+
 // Source is the sender name OTLP events are counted under in the Engine's sources table.
 const Source = "otlp"
 
 const schema = `
 CREATE TABLE IF NOT EXISTS ` + SeriesTable + ` (series TEXT PRIMARY KEY, start INTEGER NOT NULL, time INTEGER NOT NULL, a REAL NOT NULL, b REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS ` + RequestsTable + ` (sha256 TEXT PRIMARY KEY, received INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS ` + StateTable + ` (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS ` + StateTable + ` (key TEXT PRIMARY KEY, value INTEGER NOT NULL, note TEXT NOT NULL DEFAULT '');
 `
 
 // Stats counts what the intake has done since it started.
@@ -63,7 +68,8 @@ type route struct {
 	where  []policy.Cond
 	keys   []*policy.Field
 	vals   []*policy.Field
-	hist   bool // every value is count, sum, min or max, so histogram points fill them by name
+	hist   bool  // every value is count, sum, min or max, so histogram points fill them by name
+	since  int64 // nanoseconds: when the stream began taking this metric with this where
 }
 
 type series struct {
@@ -83,8 +89,8 @@ type Intake struct {
 	dirty    []*series
 	seen     map[string]int64
 	newSeen  []string
-	since    int64 // nanoseconds: cumulative series that started before this set a baseline first
 	stats    Stats
+	pruned   int64 // when series were last expired, in seconds
 	fields   map[string]string
 	sb       strings.Builder
 }
@@ -122,17 +128,32 @@ func New(eng *engine.Engine) (*Intake, error) {
 		return nil, err
 	}
 	now := eng.Wall()
-	if err := st.Exec(fmt.Sprintf("INSERT OR IGNORE INTO %s (key, value) VALUES ('since', %d)", StateTable, now*1e9)); err != nil {
-		return nil, err
+	// Each stream from metrics counts from when it began taking its metric with its where: a stream
+	// added by a migration, or one whose metric or where changed, starts again from now, so it never
+	// counts what happened before it took the metric.
+	for _, routes := range in.byMetric {
+		for _, rt := range routes {
+			sig := strconv.Quote(pol.Streams[rt.stream].FromMetrics) + " where " + condText(rt.where)
+			key := "since:" + rt.name
+			found := false
+			err := st.Query("SELECT value, note FROM "+StateTable+" WHERE key = ?", []any{key}, func(r []any) error {
+				if note, _ := r[1].(string); note == sig {
+					rt.since, found = asInt(r[0]), true
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+			if !found {
+				rt.since = now * 1e9
+				if err := st.Exec(fmt.Sprintf("INSERT OR REPLACE INTO %s (key, value, note) VALUES (%s, %d, %s)", StateTable, sqlQuote(key), rt.since, sqlQuote(sig))); err != nil {
+					return nil, err
+				}
+			}
+		}
 	}
-	err := st.Query("SELECT value FROM "+StateTable+" WHERE key = 'since'", nil, func(r []any) error {
-		in.since = asInt(r[0])
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	err = st.Query("SELECT series, start, time, a, b FROM "+SeriesTable, nil, func(r []any) error {
+	err := st.Query("SELECT series, start, time, a, b FROM "+SeriesTable+" WHERE time >= ?", []any{(now - SeriesExpiry) * 1e9}, func(r []any) error {
 		k, _ := r[0].(string)
 		in.series[k] = &series{key: k, start: asInt(r[1]), time: asInt(r[2]), a: asReal(r[3]), b: asReal(r[4])}
 		return nil
@@ -309,13 +330,13 @@ func (in *Intake) Metrics(body []byte, ms []Metric) (Result, error) {
 	for i := range ms {
 		m := &ms[i]
 		routes := in.byMetric[m.Name]
-		in.stats.Points += int64(len(m.Points))
+		in.stats.Points += int64(len(m.Points) + m.Unread)
 		if len(routes) == 0 {
-			in.stats.Unused += int64(len(m.Points))
+			in.stats.Unused += int64(len(m.Points) + m.Unread)
 			continue
 		}
 		if m.Kind != Gauge && m.Kind != Sum && m.Kind != Histogram {
-			for range m.Points {
+			for range m.Unread {
 				res.reject(fmt.Sprintf("%s is a%s %s, which Precomputing does not take", m.Name, map[bool]string{true: "n"}[m.Kind == ExpHist], m.Kind))
 			}
 			continue
@@ -505,7 +526,9 @@ func (in *Intake) delta(rt *route, m *Metric, p *Point, cur []float64) ([]float6
 		in.series[key] = s
 		s.start, s.time, s.a, s.b = start, at, cur[0], b
 		in.mark(s)
-		if start != 0 && start >= in.since {
+		// A series that began while this stream was taking the metric, and recently enough that it
+		// can't be one forgotten after SeriesExpiry, holds only what happened since: count it all.
+		if start != 0 && start >= rt.since && start >= (in.eng.Wall()-SeriesExpiry)*1e9 {
 			return cur, true, ""
 		}
 		in.stats.Baseline++
@@ -539,6 +562,9 @@ func (in *Intake) mark(s *series) {
 // Blocks writes the series and request digests that changed, and forgets digests older than the
 // repeat window.
 func (in *Intake) Blocks(bt *engine.Batch) {
+	if b := in.expire(); b != nil {
+		bt.Blocks = append(bt.Blocks, b)
+	}
 	if len(in.dirty) > 0 {
 		b := engine.NewBlock("INSERT OR REPLACE INTO "+SeriesTable+" (series, start, time, a, b) VALUES (?, ?, ?, ?, ?)", "tiiff")
 		for _, s := range in.dirty {
@@ -565,6 +591,36 @@ func (in *Intake) Blocks(bt *engine.Batch) {
 		d.EndRow()
 		bt.Blocks = append(bt.Blocks, d)
 	}
+}
+
+// expire forgets series not seen for SeriesExpiry, at most once an hour, and returns the block that
+// deletes them from the file, or nil.
+func (in *Intake) expire() *engine.Block {
+	now := in.eng.Wall()
+	if now-in.pruned < 3600 {
+		return nil
+	}
+	in.pruned = now
+	cut := (now - SeriesExpiry) * 1e9
+	for k, s := range in.series {
+		if s.time < cut && !s.dirty {
+			delete(in.series, k)
+		}
+	}
+	b := engine.NewBlock("DELETE FROM "+SeriesTable+" WHERE time < ?", "i")
+	b.AddInt(cut)
+	b.EndRow()
+	return b
+}
+
+func sqlQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
+
+func condText(cs []policy.Cond) string {
+	var parts []string
+	for _, c := range cs {
+		parts = append(parts, c.Field+"="+strconv.Quote(c.Value))
+	}
+	return strings.Join(parts, " and ")
 }
 
 // Written is called once a checkpoint is in the file.

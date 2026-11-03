@@ -69,7 +69,20 @@ func (p *Plan) compare(why *[]string) {
 		}
 	}
 	for _, pc := range n.Precomputes {
-		if oldPC[pc.Name] == nil {
+		if oldPC[pc.Name] != nil {
+			continue
+		}
+		// Precomputes of one stream with the same by and per share their state. A new one that reads
+		// state an old one already fills answers from everything that state holds, from the start.
+		var shares []string
+		for _, x := range o.Precomputes {
+			if StateTable(x) == StateTable(pc) {
+				shares = append(shares, x.Name)
+			}
+		}
+		if len(shares) > 0 {
+			changed("precompute %s = %s answers from the start of the file: it reads the state %s already keeps", pc.Name, precomputeText(pc), strings.Join(shares, ", "))
+		} else {
 			added("precompute %s = %s, counting from the migration", pc.Name, precomputeText(pc))
 		}
 	}
@@ -209,6 +222,22 @@ func compareStream(o, n *policy.Stream, refuse, added, changed func(string, ...a
 	case oa != nil && (oa.Z != na.Z || oa.Memory != na.Memory || oa.Warmup != na.Warmup || oa.Keep != na.Keep || oa.Per != na.Per):
 		changed("stream %s judges anomalies with z > %g, memory %d, warmup %d, keep %d per %s", name, na.Z, na.Memory, na.Warmup, na.Keep, policy.FormatDuration(na.Per))
 	}
+}
+
+// StateTable is the table that holds a precompute's state, which precomputes of one stream with the
+// same by and per share (quantiles have one per value).
+func StateTable(pc *policy.Precompute) string {
+	name := "_pc_" + pc.Stream
+	if pc.Func == "quantile" {
+		name = "_pcq_" + pc.Stream + "_" + pc.Field
+	}
+	if len(pc.By) > 0 {
+		name += "_by_" + strings.Join(pc.By, "_")
+	}
+	if pc.Per != "" {
+		name += "_per_" + pc.Per
+	}
+	return name
 }
 
 func keepText(k int64) string {

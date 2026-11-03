@@ -26,27 +26,32 @@ func (j *jint) UnmarshalJSON(b []byte) error {
 		*j = jint(v)
 		return nil
 	}
-	if v, err := strconv.ParseUint(s, 10, 64); err == nil {
-		*j = jint(int64(v))
-		return nil
-	}
 	// A number written with an exponent or a fraction, such as 1.7e18.
 	f, err := strconv.ParseFloat(s, 64)
-	if err != nil || f != math.Trunc(f) || math.Abs(f) > 1<<63 {
-		return fmt.Errorf("%s is not a whole number", b)
+	if err != nil || f != math.Trunc(f) || f >= 1<<63 || f < -(1<<63) {
+		return fmt.Errorf("%s is not a whole number that fits in 64 bits", b)
 	}
 	*j = jint(int64(f))
 	return nil
 }
 
+// juint is an unsigned 64-bit number: fixed64 times and counts.
 type juint uint64
 
 func (j *juint) UnmarshalJSON(b []byte) error {
-	var v jint
-	if err := v.UnmarshalJSON(b); err != nil {
-		return err
+	s := strings.Trim(string(b), `"`)
+	if s == "null" || s == "" {
+		return nil
 	}
-	*j = juint(uint64(v))
+	if v, err := strconv.ParseUint(s, 10, 64); err == nil {
+		*j = juint(v)
+		return nil
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil || f != math.Trunc(f) || f < 0 || f >= 1<<64 {
+		return fmt.Errorf("%s is not a whole number from 0 that fits in 64 bits", b)
+	}
+	*j = juint(uint64(f))
 	return nil
 }
 
@@ -97,50 +102,72 @@ type jKV struct {
 }
 
 func (a *jAny) text(depth int) (string, error) {
+	s, _, err := a.json(depth)
+	return s, err
+}
+
+// json is text, and whether it is an array or a map in JSON (see anyValueJSON).
+func (a *jAny) json(depth int) (string, bool, error) {
 	if depth > maxDepth {
-		return "", errors.New("attribute values nest too deeply")
+		return "", false, errors.New("attribute values nest too deeply")
 	}
 	switch {
 	case a.StringValue != nil:
-		return *a.StringValue, nil
+		return *a.StringValue, false, nil
 	case a.BoolValue != nil:
-		return strconv.FormatBool(*a.BoolValue), nil
+		return strconv.FormatBool(*a.BoolValue), false, nil
 	case a.IntValue != nil:
-		return strconv.FormatInt(int64(*a.IntValue), 10), nil
+		return strconv.FormatInt(int64(*a.IntValue), 10), false, nil
 	case a.DoubleValue != nil:
-		return strconv.FormatFloat(float64(*a.DoubleValue), 'g', -1, 64), nil
+		return strconv.FormatFloat(float64(*a.DoubleValue), 'g', -1, 64), false, nil
 	case a.BytesValue != nil:
 		b, err := base64.StdEncoding.DecodeString(*a.BytesValue)
 		if err != nil {
 			// Some senders write bytes in hex, as OTLP/JSON writes trace and span ids.
 			if b, err = hex.DecodeString(*a.BytesValue); err != nil {
-				return "", errors.New("bytesValue is neither base64 nor hex")
+				return "", false, errors.New("bytesValue is neither base64 nor hex")
 			}
 		}
-		return base64.StdEncoding.EncodeToString(b), nil
+		return base64.StdEncoding.EncodeToString(b), false, nil
 	case a.ArrayValue != nil:
-		parts := make([]string, len(a.ArrayValue.Values))
+		var sb strings.Builder
+		sb.WriteByte('[')
 		for i := range a.ArrayValue.Values {
-			v, err := a.ArrayValue.Values[i].text(depth + 1)
+			v, nested, err := a.ArrayValue.Values[i].json(depth + 1)
 			if err != nil {
-				return "", err
+				return "", false, err
 			}
-			parts[i] = strconv.Quote(v)
+			if i > 0 {
+				sb.WriteByte(',')
+			}
+			sb.WriteString(jsonPart(v, nested))
+			if sb.Len() > MaxValue {
+				return "", false, errLongValue
+			}
 		}
-		return "[" + strings.Join(parts, ",") + "]", nil
+		sb.WriteByte(']')
+		return sb.String(), true, nil
 	case a.KvlistValue != nil:
-		parts := make([]string, len(a.KvlistValue.Values))
+		var sb strings.Builder
+		sb.WriteByte('{')
 		for i := range a.KvlistValue.Values {
 			kv := &a.KvlistValue.Values[i]
-			v, err := kv.Value.text(depth + 1)
+			v, nested, err := kv.Value.json(depth + 1)
 			if err != nil {
-				return "", err
+				return "", false, err
 			}
-			parts[i] = strconv.Quote(kv.Key) + ":" + strconv.Quote(v)
+			if i > 0 {
+				sb.WriteByte(',')
+			}
+			sb.WriteString(strconv.Quote(kv.Key) + ":" + jsonPart(v, nested))
+			if sb.Len() > MaxValue {
+				return "", false, errLongValue
+			}
 		}
-		return "{" + strings.Join(parts, ",") + "}", nil
+		sb.WriteByte('}')
+		return sb.String(), true, nil
 	}
-	return "", nil
+	return "", false, nil
 }
 
 func jattrs(list []jKV) ([]KV, error) {
@@ -200,7 +227,14 @@ type jLogs struct {
 	} `json:"resourceLogs"`
 }
 
+// maxObjects bounds the JSON objects a request may hold before it is decoded: every record and
+// point is one, so a request of empty objects is refused before it fills memory.
+const maxObjects = 8 * MaxItems
+
 func strict(b []byte, v any) error {
+	if bytes.Count(b, []byte("{")) > maxObjects {
+		return errTooMany
+	}
 	d := json.NewDecoder(bytes.NewReader(b))
 	if err := d.Decode(v); err != nil {
 		return err
@@ -239,6 +273,9 @@ func DecodeLogsJSON(b []byte) ([]LogRecord, error) {
 				at, err := jattrs(lr.Attributes)
 				if err != nil {
 					return nil, err
+				}
+				if len(out) >= MaxItems {
+					return nil, errTooMany
 				}
 				out = append(out, LogRecord{Time: uint64(lr.TimeUnixNano), Observed: uint64(lr.ObservedTimeUnixNano),
 					SeverityNumber: int64(lr.SeverityNumber), SeverityText: lr.SeverityText, Body: body,
@@ -318,6 +355,7 @@ func DecodeMetricsJSON(b []byte) ([]Metric, error) {
 		return nil, err
 	}
 	var out []Metric
+	points := 0
 	for _, rm := range req.ResourceMetrics {
 		var res []KV
 		if rm.Resource != nil {
@@ -361,9 +399,9 @@ func DecodeMetricsJSON(b []byte) ([]Metric, error) {
 						m.Points = append(m.Points, p)
 					}
 				case jm.ExponentialHistogram != nil:
-					m.Kind, m.Points = ExpHist, make([]Point, len(jm.ExponentialHistogram.DataPoints))
+					m.Kind, m.Unread = ExpHist, len(jm.ExponentialHistogram.DataPoints)
 				case jm.Summary != nil:
-					m.Kind, m.Points = Summary, make([]Point, len(jm.Summary.DataPoints))
+					m.Kind, m.Unread = Summary, len(jm.Summary.DataPoints)
 				}
 				for i := range nps {
 					p, err := nps[i].point()
@@ -371,6 +409,9 @@ func DecodeMetricsJSON(b []byte) ([]Metric, error) {
 						return nil, err
 					}
 					m.Points = append(m.Points, p)
+				}
+				if points += len(m.Points) + m.Unread; points > MaxItems {
+					return nil, errTooMany
 				}
 				out = append(out, m)
 			}

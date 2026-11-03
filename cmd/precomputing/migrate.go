@@ -49,8 +49,11 @@ func migrateCmd(args []string) int {
 		return fail("%v", err)
 	}
 	if len(plan.Added) == 0 && len(plan.Changed) == 0 {
-		fmt.Println("The file already holds this policy; nothing to do.")
-		return 0
+		if plan.SameText() {
+			fmt.Println("The file already holds this policy; nothing to do.")
+			return 0
+		}
+		plan.Changed = append(plan.Changed, "only the policy's text, such as its comments: nothing is counted differently")
 	}
 	say := func(head string, list []string) {
 		if len(list) > 0 {

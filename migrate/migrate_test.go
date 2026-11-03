@@ -427,3 +427,44 @@ func TestMigrateNameInUse(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 }
+
+// A new precompute that shares state with an old one answers from the start of the file, and the
+// plan says so instead of calling it new.
+func TestMigrateSharedState(t *testing.T) {
+	v1 := readExample(t, "latency.precompute")
+	path := filepath.Join(t.TempDir(), "f.db")
+	db := sqlFile(t, path, v1)
+	feedSQL(t, db, latency(2000, 1790586000, 4), 1790586000+500)
+	p, err := Prepare(db, v1+"\nprecompute n_ep = count(latency) by endpoint\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.Added) != 0 || len(p.Changed) != 1 || !strings.Contains(p.Changed[0], "answers from the start of the file") {
+		t.Fatalf("plan: added %q, changed %q", p.Added, p.Changed)
+	}
+	if err := p.Apply(db, 1790600000); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := one(db, "SELECT CAST(sum(value) AS TEXT) FROM n_ep"); got != "2000" {
+		t.Errorf("n_ep holds %s events, want all 2000", got)
+	}
+}
+
+// A trigger on a compiled table that the policy doesn't make is refused: dropped silently it would be
+// lost, and left in place beside the new trigger it could count events twice.
+func TestMigrateForeignTrigger(t *testing.T) {
+	v1 := readExample(t, "latency.precompute")
+	path := filepath.Join(t.TempDir(), "f.db")
+	db := sqlFile(t, path, v1)
+	if err := db.Exec("CREATE TABLE audit (ts INTEGER); CREATE TRIGGER my_audit AFTER INSERT ON latency_raw BEGIN INSERT INTO audit VALUES (NEW.ts); END"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Prepare(db, v2(v1)); err == nil || !strings.Contains(err.Error(), "trigger my_audit on latency_raw") {
+		t.Fatalf("got %v", err)
+	}
+	// A trigger on the owner's own table is theirs and stays out of it.
+	db.Exec("DROP TRIGGER my_audit; CREATE TABLE mine (x INTEGER); CREATE TRIGGER mine_t AFTER INSERT ON mine BEGIN SELECT 1; END")
+	if _, err := Prepare(db, v2(v1)); err != nil {
+		t.Fatal(err)
+	}
+}

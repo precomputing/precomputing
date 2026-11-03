@@ -59,10 +59,17 @@ const (
 	Cumulative  = 2
 )
 
+// MaxItems is the most log records, or metric points, one request may hold. Exporters send a few
+// thousand at a time; the limit keeps a small request of empty records from filling memory.
+const MaxItems = 200000
+
+var errTooMany = fmt.Errorf("a request holds more than %d records or points", MaxItems)
+
 // Metric is one OTLP metric with the attributes of its resource and scope.
 type Metric struct {
 	Name        string
 	Kind        string
+	Unread      int // points of kinds Precomputing does not take: counted, not read
 	Temporality int64
 	Monotonic   bool
 	Resource    []KV
@@ -215,15 +222,30 @@ func double(w *wire, wt int) (float64, error) {
 	return math.Float64frombits(v), err
 }
 
+// MaxValue is the longest an array or a map may be as JSON text. Plain strings are as long as
+// they came, which the request's size bounds.
+const MaxValue = 64 << 10
+
+var errLongValue = fmt.Errorf("an array or map attribute value is longer than %d bytes as JSON", MaxValue)
+
 // anyValue reads an AnyValue as text: strings as they are, numbers and booleans as Go prints them,
 // bytes in base64, arrays and maps as JSON.
 func anyValue(b []byte, depth int) (string, error) {
+	s, _, err := anyValueJSON(b, depth)
+	return s, err
+}
+
+// anyValueJSON also says whether the text is an array or a map written as JSON, which a
+// surrounding array or map takes as it is rather than as a quoted string. Quoting nested JSON again
+// at every level would double its length each time.
+func anyValueJSON(b []byte, depth int) (string, bool, error) {
 	if depth > maxDepth {
-		return "", errors.New("attribute values nest too deeply")
+		return "", false, errors.New("attribute values nest too deeply")
 	}
-	out := ""
+	out, nested := "", false
 	err := each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
+		nested = false
 		switch num {
 		case 1:
 			out, err = text(w, wt)
@@ -243,6 +265,7 @@ func anyValue(b []byte, depth int) (string, error) {
 			var m []byte
 			if m, err = sub(w, wt); err == nil {
 				out, err = composite(m, num == 6, depth+1)
+				nested = true
 			}
 		case 7:
 			var v []byte
@@ -253,12 +276,21 @@ func anyValue(b []byte, depth int) (string, error) {
 		}
 		return true, err
 	})
-	return out, err
+	return out, nested, err
+}
+
+// jsonPart is an element of an array or map in JSON: nested JSON as it is, anything else quoted.
+func jsonPart(s string, nested bool) string {
+	if nested {
+		return s
+	}
+	return strconv.Quote(s)
 }
 
 // composite writes an ArrayValue or a KeyValueList as JSON.
 func composite(b []byte, kv bool, depth int) (string, error) {
-	var parts []string
+	var sb strings.Builder
+	n := 0
 	err := each(b, func(w *wire, num, wt int) (bool, error) {
 		if num != 1 {
 			return false, nil
@@ -267,22 +299,48 @@ func composite(b []byte, kv bool, depth int) (string, error) {
 		if err != nil {
 			return true, err
 		}
+		if n > 0 {
+			sb.WriteByte(',')
+		}
+		n++
 		if kv {
-			k, err := keyValue(m, depth)
+			var key, val string
+			var nested bool
+			err := each(m, func(w *wire, num, wt int) (bool, error) {
+				var err error
+				switch num {
+				case 1:
+					key, err = text(w, wt)
+				case 2:
+					var v []byte
+					if v, err = sub(w, wt); err == nil {
+						val, nested, err = anyValueJSON(v, depth)
+					}
+				default:
+					return false, nil
+				}
+				return true, err
+			})
 			if err != nil {
 				return true, err
 			}
-			parts = append(parts, strconv.Quote(k.Key)+":"+strconv.Quote(k.Value))
-			return true, nil
+			sb.WriteString(strconv.Quote(key) + ":" + jsonPart(val, nested))
+		} else {
+			v, nested, err := anyValueJSON(m, depth)
+			if err != nil {
+				return true, err
+			}
+			sb.WriteString(jsonPart(v, nested))
 		}
-		v, err := anyValue(m, depth)
-		parts = append(parts, strconv.Quote(v))
-		return true, err
+		if sb.Len() > MaxValue {
+			return true, errLongValue
+		}
+		return true, nil
 	})
 	if kv {
-		return "{" + strings.Join(parts, ",") + "}", err
+		return "{" + sb.String() + "}", err
 	}
-	return "[" + strings.Join(parts, ",") + "]", err
+	return "[" + sb.String() + "]", err
 }
 
 func keyValue(b []byte, depth int) (KV, error) {
@@ -444,6 +502,9 @@ func DecodeLogs(b []byte) ([]LogRecord, error) {
 				if err != nil {
 					return true, err
 				}
+				if len(out) >= MaxItems {
+					return true, errTooMany
+				}
 				out = append(out, r)
 			}
 		}
@@ -455,6 +516,7 @@ func DecodeLogs(b []byte) ([]LogRecord, error) {
 // DecodeMetrics reads an ExportMetricsServiceRequest in protobuf.
 func DecodeMetrics(b []byte) ([]Metric, error) {
 	var out []Metric
+	points := 0
 	err := each(b, func(w *wire, num, wt int) (bool, error) {
 		if num != 1 {
 			return false, nil
@@ -511,7 +573,7 @@ func DecodeMetrics(b []byte) ([]Metric, error) {
 				return true, err
 			}
 			for _, mb := range ms {
-				m, err := metric(mb)
+				m, err := metric(mb, &points)
 				if err != nil {
 					return true, err
 				}
@@ -524,7 +586,7 @@ func DecodeMetrics(b []byte) ([]Metric, error) {
 	return out, err
 }
 
-func metric(b []byte) (Metric, error) {
+func metric(b []byte, points *int) (Metric, error) {
 	var m Metric
 	err := each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
@@ -532,10 +594,12 @@ func metric(b []byte) (Metric, error) {
 		case 1:
 			m.Name, err = text(w, wt)
 		case 5, 7, 9, 10, 11:
+			// A metric holds one kind; should a message carry two, the last one counts.
 			m.Kind = map[int]string{5: Gauge, 7: Sum, 9: Histogram, 10: ExpHist, 11: Summary}[num]
+			m.Points, m.Unread = nil, 0
 			var d []byte
 			if d, err = sub(w, wt); err == nil {
-				err = metricData(d, &m, num)
+				err = metricData(d, &m, num, points)
 			}
 		default:
 			return false, nil
@@ -547,7 +611,7 @@ func metric(b []byte) (Metric, error) {
 
 // metricData reads a Gauge, Sum or Histogram. The other kinds are kept with their points left out:
 // Precomputing does not take them, and says so.
-func metricData(b []byte, m *Metric, kind int) error {
+func metricData(b []byte, m *Metric, kind int, points *int) error {
 	return each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		switch {
@@ -560,11 +624,17 @@ func metricData(b []byte, m *Metric, kind int) error {
 				} else {
 					p, err = numberPoint(d)
 				}
+				if *points++; *points > MaxItems {
+					return true, errTooMany
+				}
 				m.Points = append(m.Points, p)
 			}
 		case num == 1:
 			if _, err = sub(w, wt); err == nil {
-				m.Points = append(m.Points, Point{}) // counted, not read
+				if *points++; *points > MaxItems {
+					return true, errTooMany
+				}
+				m.Unread++
 			}
 		case num == 2 && kind != 5 && kind != 11:
 			var v uint64

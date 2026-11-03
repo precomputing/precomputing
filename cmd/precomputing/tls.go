@@ -20,6 +20,8 @@ type certFiles struct {
 	certSeen   []byte
 	keySeen    []byte
 	lastFailed string
+	badCert    []byte // the last pair that failed to load, so it isn't parsed again each time
+	badKey     []byte
 }
 
 func newCertFiles(certPath, keyPath string) (*certFiles, error) {
@@ -37,7 +39,8 @@ func (c *certFiles) get() (*tls.Certificate, error) {
 	keyPEM, err2 := os.ReadFile(c.keyPath)
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if err1 == nil && err2 == nil && c.cert != nil && bytes.Equal(certPEM, c.certSeen) && bytes.Equal(keyPEM, c.keySeen) {
+	if err1 == nil && err2 == nil && c.cert != nil && ((bytes.Equal(certPEM, c.certSeen) && bytes.Equal(keyPEM, c.keySeen)) ||
+		(bytes.Equal(certPEM, c.badCert) && bytes.Equal(keyPEM, c.badKey))) {
 		return c.cert, nil
 	}
 	var err error
@@ -52,6 +55,7 @@ func (c *certFiles) get() (*tls.Certificate, error) {
 			c.cert, c.certSeen, c.keySeen, c.lastFailed = &pair, certPEM, keyPEM, ""
 			return c.cert, nil
 		}
+		c.badCert, c.badKey = certPEM, keyPEM
 		err = fmt.Errorf("%s and %s: %v", c.certPath, c.keyPath, err)
 	}
 	if c.cert == nil {

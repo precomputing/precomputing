@@ -365,3 +365,144 @@ stream rpc from metrics "rpc.duration" {
 		t.Errorf("result %+v", res)
 	}
 }
+
+// Values nested inside arrays are written as JSON once, not quoted again at every level, so their
+// text grows with the request, never doubling per level; past MaxValue the request is refused.
+func TestNestedValuesStaySmall(t *testing.T) {
+	leaf := `{"stringValue":"` + strings.Repeat(`\"`, 1000) + `"}`
+	v := leaf
+	for i := 0; i < 15; i++ {
+		v = `{"arrayValue":{"values":[` + v + `]}}`
+	}
+	req := `{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"timeUnixNano":"1","attributes":[{"key":"k","value":` + v + `}]}]}]}]}`
+	recs, err := DecodeLogsJSON([]byte(req))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len(recs[0].Attrs[0].Value); n > 3000 {
+		t.Errorf("a %d-byte request gave a %d-byte value", len(req), n)
+	}
+	big := `{"stringValue":"` + strings.Repeat("x", MaxValue) + `"}`
+	if _, err := DecodeLogsJSON([]byte(`{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"attributes":[{"key":"k","value":{"arrayValue":{"values":[` + big + `]}}}]}]}]}]}`)); err == nil {
+		t.Error("an array longer than MaxValue was accepted")
+	}
+}
+
+// A request of empty points is refused once it holds more than MaxItems, in both encodings.
+func TestTooManyItems(t *testing.T) {
+	var pb []byte
+	// ResourceMetrics { ScopeMetrics { Metric { gauge { data_points: empty } x n } } }
+	points := make([]byte, 0, 2*(MaxItems+1))
+	for i := 0; i <= MaxItems; i++ {
+		points = append(points, 0x0a, 0x00)
+	}
+	wrap := func(field byte, b []byte) []byte {
+		out := []byte{field<<3 | 2}
+		out = binaryUvarint(out, len(b))
+		return append(out, b...)
+	}
+	gauge := wrap(5, points)
+	metric := wrap(2, gauge)
+	scope := wrap(2, metric)
+	pb = wrap(1, scope)
+	if _, err := DecodeMetrics(pb); err == nil || !strings.Contains(err.Error(), "more than") {
+		t.Errorf("protobuf: %v", err)
+	}
+	js := `{"resourceMetrics":[{"scopeMetrics":[{"metrics":[{"name":"x","gauge":{"dataPoints":[` + strings.TrimSuffix(strings.Repeat("{},", MaxItems+1), ",") + `]}}]}]}]}`
+	if _, err := DecodeMetricsJSON([]byte(js)); err == nil {
+		t.Error("JSON: accepted")
+	}
+}
+
+func binaryUvarint(b []byte, n int) []byte {
+	for n >= 0x80 {
+		b = append(b, byte(n)|0x80)
+		n >>= 7
+	}
+	return append(b, byte(n))
+}
+
+// A stream that begins taking a metric later, as after a migration, counts from then on: a series
+// that started before it only sets the baseline, though it started after the file first took OTLP.
+func TestStreamAddedLater(t *testing.T) {
+	src := `stream queue from metrics "queue.depth" {
+  key   queue text
+  value depth real
+  rollup 1m keep 1d
+}`
+	pol, _ := policy.Parse(src)
+	path := filepath.Join(t.TempDir(), "f.db")
+	st, _ := sqlitestore.Open(path, sqlitestore.Options{})
+	eng, _ := engine.Open(st, pol, "t")
+	eng.SetWall(func() int64 { return T - 1000 })
+	if _, err := New(eng); err != nil {
+		t.Fatal(err)
+	}
+	eng.Checkpoint()
+	st.Close()
+
+	// The policy gains a stream for http.requests ten seconds before the export; that series started
+	// at T-600, after the file began taking OTLP but before the stream existed.
+	pol2, _ := policy.Parse(src + "\n" + `stream requests from metrics "http.requests" {
+  key   http_route text
+  value calls integer
+  rollup 1m keep 1d
+}
+precompute requests_total = sum(requests.calls) by http_route`)
+	os.Remove(path)
+	st2, _ := sqlitestore.Open(path, sqlitestore.Options{})
+	defer st2.Close()
+	eng2, _ := engine.Open(st2, pol2, "t")
+	eng2.SetWall(func() int64 { return T - 1000 })
+	in0, _ := New(eng2) // the queue stream's start, as before
+	_ = in0
+	eng2.SetWall(func() int64 { return T - 10 })
+	st2.Exec("DELETE FROM " + StateTable + " WHERE key = 'since:requests'")
+	in, err := New(eng2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := fixture(t, "metrics-1.pb")
+	ms, _ := DecodeMetrics(body)
+	if _, err := in.Metrics(body, ms); err != nil {
+		t.Fatal(err)
+	}
+	eng2.Checkpoint()
+	if got := rows(t, st2, "SELECT http_route, value FROM requests_total"); got != "" {
+		t.Errorf("a series older than its stream counted: %s", got)
+	}
+}
+
+// Series not seen for SeriesExpiry are forgotten, in memory and in the file; seen again, such a
+// series sets a new baseline rather than counting its whole total twice.
+func TestSeriesExpire(t *testing.T) {
+	wall := int64(T - 1000)
+	eng, st, in := open(t, testPolicy, wall)
+	eng.SetWall(func() int64 { return wall })
+	send := func(name string) {
+		body := fixture(t, name+".pb")
+		ms, _ := DecodeMetrics(body)
+		if _, err := in.Metrics(body, ms); err != nil {
+			t.Fatal(err)
+		}
+		if err := eng.Checkpoint(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	send("metrics-1")
+	if len(in.series) != 1 {
+		t.Fatalf("series %d", len(in.series))
+	}
+	wall = T + SeriesExpiry + 7200
+	in.pruned = 0
+	eng.Checkpoint() // nothing pending; expire runs with the next checkpoint that has work
+	send("metrics-2")
+	if got := rows(t, st, "SELECT count(*) FROM "+SeriesTable); got != "1" {
+		t.Errorf("series rows after expiry: %s", got)
+	}
+	// The first export counted the series in full (it began after the stream did); after expiry the
+	// second only sets a new baseline, so the total stays 10 rather than 10 + 25.
+	if got := rows(t, st, "SELECT http_route, value FROM requests_total"); got != "/a 10" {
+		t.Errorf("after the series was forgotten and seen again: %s, want /a 10", got)
+	}
+}
