@@ -506,3 +506,28 @@ func TestSeriesExpire(t *testing.T) {
 		t.Errorf("after the series was forgotten and seen again: %s, want /a 10", got)
 	}
 }
+
+// Empty messages of any kind count against one budget: a request of empty metrics, or of empty
+// attributes on one record, is refused before it fills memory.
+func TestEmptyMessages(t *testing.T) {
+	wrap := func(field byte, b []byte) []byte {
+		out := binaryUvarint([]byte{field<<3 | 2}, len(b))
+		return append(out, b...)
+	}
+	many := func(field byte, n int) []byte {
+		b := make([]byte, 0, 2*n)
+		for i := 0; i < n; i++ {
+			b = append(b, field<<3|2, 0)
+		}
+		return b
+	}
+	metrics := wrap(1, wrap(2, many(2, MaxMessages+1)))
+	if _, err := DecodeMetrics(metrics); err == nil {
+		t.Error("a request of empty metrics was accepted")
+	}
+	record := many(6, MaxMessages+1) // attributes of one log record
+	logs := wrap(1, wrap(2, wrap(2, record)))
+	if _, err := DecodeLogs(logs); err == nil {
+		t.Error("a record with that many empty attributes was accepted")
+	}
+}

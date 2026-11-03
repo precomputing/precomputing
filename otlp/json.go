@@ -227,9 +227,9 @@ type jLogs struct {
 	} `json:"resourceLogs"`
 }
 
-// maxObjects bounds the JSON objects a request may hold before it is decoded: every record and
-// point is one, so a request of empty objects is refused before it fills memory.
-const maxObjects = 8 * MaxItems
+// maxObjects bounds the JSON objects a request may hold before it is decoded, as MaxMessages does for
+// protobuf. It counts the opening braces, those inside strings too, so it errs on the side of less.
+const maxObjects = MaxMessages
 
 func strict(b []byte, v any) error {
 	if bytes.Count(b, []byte("{")) > maxObjects {

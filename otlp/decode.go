@@ -63,7 +63,15 @@ const (
 // thousand at a time; the limit keeps a small request of empty records from filling memory.
 const MaxItems = 200000
 
-var errTooMany = fmt.Errorf("a request holds more than %d records or points", MaxItems)
+// MaxMessages is the most messages of any kind one request may hold: records, points, metrics,
+// scopes, resources, attributes and their values. Every one costs memory once decoded, so empty
+// ones can't be used to fill it.
+const MaxMessages = 400000
+
+var errTooMany = fmt.Errorf("a request holds more than %d records or points, or more than %d messages in all", MaxItems, MaxMessages)
+
+// dec decodes one request, counting the messages it reads.
+type dec struct{ messages int }
 
 // Metric is one OTLP metric with the attributes of its resource and scope.
 type Metric struct {
@@ -164,7 +172,10 @@ func (w *wire) skip(wt int) error {
 }
 
 // each calls fn for every field of a message; fn reads the field or returns false to skip it.
-func each(b []byte, fn func(w *wire, num, wt int) (bool, error)) error {
+func (d *dec) each(b []byte, fn func(w *wire, num, wt int) (bool, error)) error {
+	if d.messages++; d.messages > MaxMessages {
+		return errTooMany
+	}
 	w := &wire{b: b}
 	for w.more() {
 		num, wt, err := w.field()
@@ -230,20 +241,20 @@ var errLongValue = fmt.Errorf("an array or map attribute value is longer than %d
 
 // anyValue reads an AnyValue as text: strings as they are, numbers and booleans as Go prints them,
 // bytes in base64, arrays and maps as JSON.
-func anyValue(b []byte, depth int) (string, error) {
-	s, _, err := anyValueJSON(b, depth)
+func (d *dec) anyValue(b []byte, depth int) (string, error) {
+	s, _, err := d.anyValueJSON(b, depth)
 	return s, err
 }
 
 // anyValueJSON also says whether the text is an array or a map written as JSON, which a
 // surrounding array or map takes as it is rather than as a quoted string. Quoting nested JSON again
 // at every level would double its length each time.
-func anyValueJSON(b []byte, depth int) (string, bool, error) {
+func (d *dec) anyValueJSON(b []byte, depth int) (string, bool, error) {
 	if depth > maxDepth {
 		return "", false, errors.New("attribute values nest too deeply")
 	}
 	out, nested := "", false
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		nested = false
 		switch num {
@@ -264,7 +275,7 @@ func anyValueJSON(b []byte, depth int) (string, bool, error) {
 		case 5, 6:
 			var m []byte
 			if m, err = sub(w, wt); err == nil {
-				out, err = composite(m, num == 6, depth+1)
+				out, err = d.composite(m, num == 6, depth+1)
 				nested = true
 			}
 		case 7:
@@ -288,10 +299,10 @@ func jsonPart(s string, nested bool) string {
 }
 
 // composite writes an ArrayValue or a KeyValueList as JSON.
-func composite(b []byte, kv bool, depth int) (string, error) {
+func (d *dec) composite(b []byte, kv bool, depth int) (string, error) {
 	var sb strings.Builder
 	n := 0
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		if num != 1 {
 			return false, nil
 		}
@@ -306,7 +317,7 @@ func composite(b []byte, kv bool, depth int) (string, error) {
 		if kv {
 			var key, val string
 			var nested bool
-			err := each(m, func(w *wire, num, wt int) (bool, error) {
+			err := d.each(m, func(w *wire, num, wt int) (bool, error) {
 				var err error
 				switch num {
 				case 1:
@@ -314,7 +325,7 @@ func composite(b []byte, kv bool, depth int) (string, error) {
 				case 2:
 					var v []byte
 					if v, err = sub(w, wt); err == nil {
-						val, nested, err = anyValueJSON(v, depth)
+						val, nested, err = d.anyValueJSON(v, depth)
 					}
 				default:
 					return false, nil
@@ -326,7 +337,7 @@ func composite(b []byte, kv bool, depth int) (string, error) {
 			}
 			sb.WriteString(strconv.Quote(key) + ":" + jsonPart(val, nested))
 		} else {
-			v, nested, err := anyValueJSON(m, depth)
+			v, nested, err := d.anyValueJSON(m, depth)
 			if err != nil {
 				return true, err
 			}
@@ -343,9 +354,9 @@ func composite(b []byte, kv bool, depth int) (string, error) {
 	return "[" + sb.String() + "]", err
 }
 
-func keyValue(b []byte, depth int) (KV, error) {
+func (d *dec) keyValue(b []byte, depth int) (KV, error) {
 	var kv KV
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		switch num {
 		case 1:
@@ -353,7 +364,7 @@ func keyValue(b []byte, depth int) (KV, error) {
 		case 2:
 			var m []byte
 			if m, err = sub(w, wt); err == nil {
-				kv.Value, err = anyValue(m, depth)
+				kv.Value, err = d.anyValue(m, depth)
 			}
 		default:
 			return false, nil
@@ -364,12 +375,12 @@ func keyValue(b []byte, depth int) (KV, error) {
 }
 
 // attrs reads a repeated KeyValue field into list.
-func attrs(w *wire, wt int, list *[]KV) error {
+func (d *dec) attrs(w *wire, wt int, list *[]KV) error {
 	m, err := sub(w, wt)
 	if err != nil {
 		return err
 	}
-	kv, err := keyValue(m, 0)
+	kv, err := d.keyValue(m, 0)
 	if err != nil {
 		return err
 	}
@@ -378,21 +389,21 @@ func attrs(w *wire, wt int, list *[]KV) error {
 }
 
 // resource reads a Resource: its attributes.
-func resource(b []byte) ([]KV, error) {
+func (d *dec) resource(b []byte) ([]KV, error) {
 	var out []KV
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		if num != 1 {
 			return false, nil
 		}
-		return true, attrs(w, wt, &out)
+		return true, d.attrs(w, wt, &out)
 	})
 	return out, err
 }
 
 // scope reads an InstrumentationScope as attributes: otel.scope.name and version, then its own.
-func scope(b []byte) ([]KV, error) {
+func (d *dec) scope(b []byte) ([]KV, error) {
 	var out []KV
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		switch num {
 		case 1, 2:
@@ -405,7 +416,7 @@ func scope(b []byte) ([]KV, error) {
 				out = append(out, KV{name, s})
 			}
 		case 3:
-			err = attrs(w, wt, &out)
+			err = d.attrs(w, wt, &out)
 		default:
 			return false, nil
 		}
@@ -415,9 +426,11 @@ func scope(b []byte) ([]KV, error) {
 }
 
 // DecodeLogs reads an ExportLogsServiceRequest in protobuf.
-func DecodeLogs(b []byte) ([]LogRecord, error) {
+func DecodeLogs(b []byte) ([]LogRecord, error) { return (&dec{}).logs(b) }
+
+func (d *dec) logs(b []byte) ([]LogRecord, error) {
 	var out []LogRecord
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		if num != 1 {
 			return false, nil
 		}
@@ -427,13 +440,13 @@ func DecodeLogs(b []byte) ([]LogRecord, error) {
 		}
 		var res []KV
 		var scopes [][]byte
-		err = each(rl, func(w *wire, num, wt int) (bool, error) {
+		err = d.each(rl, func(w *wire, num, wt int) (bool, error) {
 			var err error
 			switch num {
 			case 1:
 				var m []byte
 				if m, err = sub(w, wt); err == nil {
-					res, err = resource(m)
+					res, err = d.resource(m)
 				}
 			case 2:
 				var m []byte
@@ -451,13 +464,13 @@ func DecodeLogs(b []byte) ([]LogRecord, error) {
 		for _, sl := range scopes {
 			var sc []KV
 			var recs [][]byte
-			err := each(sl, func(w *wire, num, wt int) (bool, error) {
+			err := d.each(sl, func(w *wire, num, wt int) (bool, error) {
 				var err error
 				switch num {
 				case 1:
 					var m []byte
 					if m, err = sub(w, wt); err == nil {
-						sc, err = scope(m)
+						sc, err = d.scope(m)
 					}
 				case 2:
 					var m []byte
@@ -474,7 +487,7 @@ func DecodeLogs(b []byte) ([]LogRecord, error) {
 			}
 			for _, rec := range recs {
 				r := LogRecord{Resource: res, Scope: sc}
-				err := each(rec, func(w *wire, num, wt int) (bool, error) {
+				err := d.each(rec, func(w *wire, num, wt int) (bool, error) {
 					var err error
 					switch num {
 					case 1:
@@ -490,10 +503,10 @@ func DecodeLogs(b []byte) ([]LogRecord, error) {
 					case 5:
 						var m []byte
 						if m, err = sub(w, wt); err == nil {
-							r.Body, err = anyValue(m, 0)
+							r.Body, err = d.anyValue(m, 0)
 						}
 					case 6:
-						err = attrs(w, wt, &r.Attrs)
+						err = d.attrs(w, wt, &r.Attrs)
 					default:
 						return false, nil
 					}
@@ -514,10 +527,12 @@ func DecodeLogs(b []byte) ([]LogRecord, error) {
 }
 
 // DecodeMetrics reads an ExportMetricsServiceRequest in protobuf.
-func DecodeMetrics(b []byte) ([]Metric, error) {
+func DecodeMetrics(b []byte) ([]Metric, error) { return (&dec{}).metrics(b) }
+
+func (d *dec) metrics(b []byte) ([]Metric, error) {
 	var out []Metric
 	points := 0
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		if num != 1 {
 			return false, nil
 		}
@@ -527,13 +542,13 @@ func DecodeMetrics(b []byte) ([]Metric, error) {
 		}
 		var res []KV
 		var scopes [][]byte
-		err = each(rm, func(w *wire, num, wt int) (bool, error) {
+		err = d.each(rm, func(w *wire, num, wt int) (bool, error) {
 			var err error
 			switch num {
 			case 1:
 				var m []byte
 				if m, err = sub(w, wt); err == nil {
-					res, err = resource(m)
+					res, err = d.resource(m)
 				}
 			case 2:
 				var m []byte
@@ -551,13 +566,13 @@ func DecodeMetrics(b []byte) ([]Metric, error) {
 		for _, sm := range scopes {
 			var sc []KV
 			var ms [][]byte
-			err := each(sm, func(w *wire, num, wt int) (bool, error) {
+			err := d.each(sm, func(w *wire, num, wt int) (bool, error) {
 				var err error
 				switch num {
 				case 1:
 					var m []byte
 					if m, err = sub(w, wt); err == nil {
-						sc, err = scope(m)
+						sc, err = d.scope(m)
 					}
 				case 2:
 					var m []byte
@@ -573,7 +588,7 @@ func DecodeMetrics(b []byte) ([]Metric, error) {
 				return true, err
 			}
 			for _, mb := range ms {
-				m, err := metric(mb, &points)
+				m, err := d.metric(mb, &points)
 				if err != nil {
 					return true, err
 				}
@@ -586,9 +601,9 @@ func DecodeMetrics(b []byte) ([]Metric, error) {
 	return out, err
 }
 
-func metric(b []byte, points *int) (Metric, error) {
+func (d *dec) metric(b []byte, points *int) (Metric, error) {
 	var m Metric
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		switch num {
 		case 1:
@@ -597,9 +612,9 @@ func metric(b []byte, points *int) (Metric, error) {
 			// A metric holds one kind; should a message carry two, the last one counts.
 			m.Kind = map[int]string{5: Gauge, 7: Sum, 9: Histogram, 10: ExpHist, 11: Summary}[num]
 			m.Points, m.Unread = nil, 0
-			var d []byte
-			if d, err = sub(w, wt); err == nil {
-				err = metricData(d, &m, num, points)
+			var data []byte
+			if data, err = sub(w, wt); err == nil {
+				err = d.metricData(data, &m, num, points)
 			}
 		default:
 			return false, nil
@@ -611,18 +626,18 @@ func metric(b []byte, points *int) (Metric, error) {
 
 // metricData reads a Gauge, Sum or Histogram. The other kinds are kept with their points left out:
 // Precomputing does not take them, and says so.
-func metricData(b []byte, m *Metric, kind int, points *int) error {
-	return each(b, func(w *wire, num, wt int) (bool, error) {
+func (d *dec) metricData(b []byte, m *Metric, kind int, points *int) error {
+	return d.each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		switch {
 		case num == 1 && (kind == 5 || kind == 7 || kind == 9):
-			var d []byte
-			if d, err = sub(w, wt); err == nil {
+			var data []byte
+			if data, err = sub(w, wt); err == nil {
 				var p Point
 				if kind == 9 {
-					p, err = histogramPoint(d)
+					p, err = d.histogramPoint(data)
 				} else {
-					p, err = numberPoint(d)
+					p, err = d.numberPoint(data)
 				}
 				if *points++; *points > MaxItems {
 					return true, errTooMany
@@ -651,13 +666,13 @@ func metricData(b []byte, m *Metric, kind int, points *int) error {
 	})
 }
 
-func numberPoint(b []byte) (Point, error) {
+func (d *dec) numberPoint(b []byte) (Point, error) {
 	var p Point
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		switch num {
 		case 7:
-			err = attrs(w, wt, &p.Attrs)
+			err = d.attrs(w, wt, &p.Attrs)
 		case 2:
 			p.Start, err = fix64(w, wt)
 		case 3:
@@ -681,13 +696,13 @@ func numberPoint(b []byte) (Point, error) {
 	return p, err
 }
 
-func histogramPoint(b []byte) (Point, error) {
+func (d *dec) histogramPoint(b []byte) (Point, error) {
 	var p Point
-	err := each(b, func(w *wire, num, wt int) (bool, error) {
+	err := d.each(b, func(w *wire, num, wt int) (bool, error) {
 		var err error
 		switch num {
 		case 9:
-			err = attrs(w, wt, &p.Attrs)
+			err = d.attrs(w, wt, &p.Attrs)
 		case 2:
 			p.Start, err = fix64(w, wt)
 		case 3:

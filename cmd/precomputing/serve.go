@@ -240,8 +240,17 @@ func serveCmd(args []string) int {
 			"refused": refused, "committed": committed,
 		})
 	})
+	// At most two OTLP requests are read and decoded at a time, so many senders at once can't hold
+	// many decoded requests in memory together; the others wait their turn.
+	decoding := make(chan struct{}, 2)
 	takeOTLP := func(signal string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			select {
+			case decoding <- struct{}{}:
+			case <-r.Context().Done():
+				return
+			}
+			defer func() { <-decoding }()
 			body, isJSON, ok := otlpBody(w, r)
 			if !ok {
 				return
