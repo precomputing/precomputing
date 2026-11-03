@@ -227,3 +227,22 @@ func TestFormatDuration(t *testing.T) {
 		}
 	}
 }
+
+func TestAhead(t *testing.T) {
+	ok := "stream u exact {\n  key c text\n  value t integer\n  ahead 5m\n  period day close 1h\n  raw until closed + 1d\n}"
+	p, err := Parse(ok)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Streams[0].Ahead != 300 {
+		t.Errorf("ahead %d, want 300", p.Streams[0].Ahead)
+	}
+	for src, want := range map[string]string{
+		"stream u {\n  key c text\n  value t real\n  ahead 5m\n  rollup 1m keep 1h\n}":                                                 "ahead belongs in an exact stream",
+		"stream u exact {\n  key c text\n  value t integer\n  ahead 5m\n  ahead 6m\n  period day close 1h\n  raw until closed + 1d\n}": "ahead is declared twice",
+	} {
+		if _, err := Parse(src); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%q: got %v, want %q", src, err, want)
+		}
+	}
+}

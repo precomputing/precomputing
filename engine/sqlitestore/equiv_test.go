@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"precomputing.com/precomputing/compile"
 	"precomputing.com/precomputing/engine"
@@ -180,7 +181,8 @@ func sqlFeed(t *testing.T, db *sqlite.DB, lay *compile.Layout, stream string, ev
 			t.Fatalf("event %d: %v", i, err)
 		}
 		ins.Reset()
-		if e.ts > now {
+		// :now is the newest event counted: one refused as too far ahead moves nothing.
+		if e.ts > now && (s.Ahead == 0 || e.ts <= time.Now().Unix()+s.Ahead) {
 			now = e.ts
 		}
 		if (i+1)%distillEvery == 0 {

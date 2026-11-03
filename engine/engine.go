@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"precomputing.com/precomputing/compile"
 	"precomputing.com/precomputing/internal/version"
@@ -47,6 +48,7 @@ type Engine struct {
 	broken  *StoppedError
 	stats   Stats
 	states  []State
+	wall    func() int64
 }
 
 type source struct {
@@ -220,6 +222,17 @@ func (e *Engine) Applied(src string) int64 {
 	return 0
 }
 
+// Wall is the wall clock in seconds, which an exact stream's ahead rule compares event times with.
+func (e *Engine) Wall() int64 {
+	if e.wall != nil {
+		return e.wall()
+	}
+	return time.Now().Unix()
+}
+
+// SetWall replaces the wall clock, for tests and replays; nil puts the system clock back.
+func (e *Engine) SetWall(f func() int64) { e.wall = f }
+
 // Now is the time of the newest event applied.
 func (e *Engine) Now() int64 { return e.now }
 
@@ -285,7 +298,8 @@ func (e *Engine) PutID(stream int, src string, seq, ts int64, id any, key int32,
 		e.stats.Duplicates++
 		return nil
 	}
-	if err := e.apply(s, &ev); err != nil {
+	moves, err := e.apply(s, &ev)
+	if err != nil {
 		return err
 	}
 	if seq > 0 {
@@ -293,7 +307,7 @@ func (e *Engine) PutID(stream int, src string, seq, ts int64, id any, key int32,
 	}
 	so.pending++
 	so.changed = true
-	if ts > so.newest {
+	if moves && ts > so.newest {
 		so.newest = ts
 	}
 	return nil
@@ -326,8 +340,9 @@ func (e *Engine) PutEvents(src string, seq int64, evs []Event) error {
 	for i := range evs {
 		ev := &evs[i]
 		s, err := e.check(ev)
+		moves := false
 		if err == nil {
-			err = e.apply(s, ev)
+			moves, err = e.apply(s, ev)
 		}
 		if err != nil {
 			if e.broken != nil {
@@ -338,7 +353,7 @@ func (e *Engine) PutEvents(src string, seq int64, evs []Event) error {
 			}
 			continue
 		}
-		if ev.TS > so.newest {
+		if moves && ev.TS > so.newest {
 			so.newest = ev.TS
 		}
 	}
@@ -399,26 +414,32 @@ func (e *Engine) check(ev *Event) (*stream, error) {
 	return s, nil
 }
 
-// apply puts a checked event into its stream.
-func (e *Engine) apply(s *stream, ev *Event) error {
-	accepted, err := s.put(ev.TS, ev.ID, ev.Key, ev.Vals, ev.Line)
+// apply puts a checked event into its stream. It reports whether the event's time may move the
+// clocks that go by event times: not when it was refused as too far ahead of the wall clock.
+func (e *Engine) apply(s *stream, ev *Event) (bool, error) {
+	refusal, err := s.put(ev.TS, ev.ID, ev.Key, ev.Vals, ev.Line)
 	if err != nil {
 		var bad *EventError
 		if errors.As(err, &bad) {
-			return err
+			return false, err
 		}
 		// A read from the file failed part way through an event: memory can no longer be trusted.
 		e.broken = &StoppedError{Err: err}
-		return e.broken
+		return false, e.broken
 	}
-	if !accepted {
+	if refusal != "" {
 		e.stats.Refused++
+	}
+	if refusal == "ahead" {
+		// A time too far in the future moves no clock, not even the one distill goes by.
+		e.stats.Events++
+		return false, nil
 	}
 	if ev.TS > e.now {
 		e.now = ev.TS
 	}
 	e.stats.Events++
-	return nil
+	return true, nil
 }
 
 // State is more of the file that the Engine writes at every checkpoint, in the same transaction

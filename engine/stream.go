@@ -348,6 +348,9 @@ func PeriodStart(per string, ts int64) int64 {
 // refusal says why an exact stream refuses an event, in the trigger's order, or "".
 func (s *stream) refusal(ts int64, id any) string {
 	p := s.pol
+	if p.Ahead > 0 && ts > s.e.Wall()+p.Ahead {
+		return "ahead"
+	}
 	if s.clockSet {
 		if p.Late > 0 && ts < s.clock-p.Late {
 			return "late"
@@ -383,11 +386,12 @@ func (s *stream) countRefused(reason string, key int32) error {
 }
 
 // put applies one event. vals are the stream's values in policy order and have been checked.
-// It returns false when an exact stream refuses the event; the refusal is counted.
-func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (bool, error) {
+// It returns the reason when an exact stream refuses the event, and "" when it is counted; a
+// refusal is counted too.
+func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (string, error) {
 	if s.pol.Exact {
 		if reason := s.refusal(ts, id); reason != "" {
-			return false, s.countRefused(reason, key)
+			return reason, s.countRefused(reason, key)
 		}
 	}
 	// Derived values first: an event whose derived value is NULL changes nothing, as in SQL.
@@ -402,10 +406,10 @@ func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (
 	for i, d := range s.derived {
 		r, ok := d(nv)
 		if !ok {
-			return false, &EventError{fmt.Sprintf("%s: derived value %s is null (a division by zero)", s.pol.Name, s.pol.Derived[i].Name)}
+			return "", &EventError{fmt.Sprintf("%s: derived value %s is null (a division by zero)", s.pol.Name, s.pol.Derived[i].Name)}
 		}
 		if !r.isInt && (math.IsInf(r.f, 0) || math.IsNaN(r.f)) {
-			return false, &EventError{fmt.Sprintf("%s: derived value %s is not a finite number", s.pol.Name, s.pol.Derived[i].Name)}
+			return "", &EventError{fmt.Sprintf("%s: derived value %s is not a finite number", s.pol.Name, s.pol.Derived[i].Name)}
 		}
 		nv = append(nv, r)
 	}
@@ -454,7 +458,7 @@ func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (
 			}
 			var err error
 			if b, err = s.getBase(key); err != nil {
-				return false, err
+				return "", err
 			}
 			if b != nil {
 				j := t
@@ -466,7 +470,7 @@ func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (
 					flag = 1
 					pw, err := s.window(a.per, ts/a.per.res*a.per.res, key)
 					if err != nil {
-						return false, err
+						return "", err
 					}
 					if pw.an < a.keep {
 						s.anoms.ts = append(s.anoms.ts, ts)
@@ -485,7 +489,7 @@ func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (
 	for _, r := range s.rollups {
 		w, err := s.window(r, ts/r.res*r.res, key)
 		if err != nil {
-			return false, err
+			return "", err
 		}
 		w.add(ts, nf, flag)
 		for qi, ni := range r.quantNum {
@@ -522,7 +526,7 @@ func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (
 
 	for _, g := range s.groups {
 		if err := g.add(ts, key, nf); err != nil {
-			return false, err
+			return "", err
 		}
 	}
 
@@ -550,7 +554,7 @@ func (s *stream) put(ts int64, id any, key int32, vals []float64, line string) (
 			b.dirty = true
 		}
 	}
-	return true, nil
+	return "", nil
 }
 
 // update moves a baseline towards x, exactly as the trigger's upsert does.

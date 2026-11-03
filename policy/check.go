@@ -355,6 +355,8 @@ func checkExact(s *Stream) error {
 			return &Error{s.ID.Pos, fmt.Sprintf("id belongs in an exact stream: write \"stream %s exact {\"", s.Name)}
 		case s.Late != 0 || s.Period != "":
 			return &Error{s.Pos, fmt.Sprintf("late and period belong in an exact stream: write \"stream %s exact {\"", s.Name)}
+		case s.Ahead != 0:
+			return &Error{s.AheadPos, fmt.Sprintf("ahead belongs in an exact stream: write \"stream %s exact {\"", s.Name)}
 		case s.RawUntilClosed:
 			return &Error{s.RawPos, fmt.Sprintf("raw until closed belongs in an exact stream: write \"stream %s exact {\"", s.Name)}
 		}

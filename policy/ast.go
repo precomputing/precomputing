@@ -48,6 +48,8 @@ type Stream struct {
 	ID             *Field // the event's own identifier, given by the sender
 	Repeats        int64  // seconds an identifier is remembered, so a repeat is refused
 	Late           int64  // an event older than the newest by more than this is refused; 0 = any
+	Ahead          int64  // an event stamped more than this past the wall clock is refused; 0 = any
+	AheadPos       Pos
 	Period         string // "hour", "day" or "month": the billing period
 	Close          int64  // a period closes this long after it ends; its events are then refused
 	RawUntilClosed bool   // raw events stay until their period has closed, plus RawAfterClose

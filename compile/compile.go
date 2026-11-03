@@ -389,6 +389,9 @@ func (c *compiler) stream(out, trig, distill *strings.Builder, s *policy.Stream)
 		detail["period"] = s.Period
 		detail["close_seconds"] = s.Close
 		detail["late_seconds"] = s.Late
+		if s.Ahead > 0 {
+			detail["ahead_seconds"] = s.Ahead
+		}
 		detail["raw_after_close_seconds"] = s.RawAfterClose
 		detail["refused_table"] = refused(s)
 		if s.ID != nil {
@@ -688,7 +691,7 @@ func (c *compiler) stream(out, trig, distill *strings.Builder, s *policy.Stream)
 }
 
 // exactChecks writes the start of an exact stream's trigger: an event is refused, and counted
-// by reason, when it is later than the policy allows, when its period has closed, or when its
+// by reason, when it is stamped too far past the wall clock, when it is later than the policy allows, when its period has closed, or when its
 // identifier has been seen. A refused event changes nothing else.
 func (c *compiler) exactChecks(trig *strings.Builder, s *policy.Stream) {
 	keys := keyNames(s.Keys)
@@ -701,6 +704,11 @@ func (c *compiler) exactChecks(trig *strings.Builder, s *policy.Stream) {
 		fmt.Fprintf(trig, "  SELECT RAISE(IGNORE) WHERE %s;\n", cond)
 	}
 	fmt.Fprintf(trig, "  -- An exact stream refuses what would change a closed period or count an event twice.\n")
+	if s.Ahead > 0 {
+		// The one check that reads the wall clock: an event stamped too far in the future would
+		// move the stream's clock for every sender and could close a period early.
+		refuse("ahead", fmt.Sprintf("NEW.ts > CAST(strftime('%%s', 'now') AS INTEGER) + %d", s.Ahead))
+	}
 	if s.Late > 0 {
 		refuse("late", fmt.Sprintf("NEW.ts < %s - %d", newest, s.Late))
 	}

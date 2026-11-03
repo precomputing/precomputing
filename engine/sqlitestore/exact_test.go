@@ -97,3 +97,121 @@ func TestExactMatchesSQL(t *testing.T) {
 		})
 	}
 }
+
+// TestAheadMatchesSQL: with ahead, an event stamped more than that past the wall clock is refused
+// as ahead by both runtimes, before any other check, and moves no clock. Without the rule, the same
+// events close September early, from the planted one on, and every later report is refused.
+func TestAheadMatchesSQL(t *testing.T) {
+	base, err := os.ReadFile(filepath.Join("..", "..", "examples", "usage.precompute"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := strings.Replace(string(base), "late   48h", "late   48h\n  ahead  1h", 1)
+	evs := usageEvents(20000, 7)
+	// A gateway whose clock is years ahead sends a few reports in the middle of the run, one of them
+	// a repeat of an earlier id: ahead comes first, so it is counted as ahead, not as a repeat.
+	far := int64(4102444800) // 2100-01-01
+	mid := len(evs) / 2
+	planted := []event{
+		{ts: far, id: "future-1", keys: []any{"acme", "small", "eu"}, vals: []float64{100, 50}},
+		{ts: far + 3600, id: "future-2", keys: []any{"birch", "large", "us"}, vals: []float64{100, 50}},
+		{ts: far, id: evs[3].id, keys: evs[3].keys, vals: evs[3].vals},
+	}
+	evs = append(evs[:mid], append(planted, evs[mid:]...)...)
+	refusedBy := func(db interface {
+		Query(string, []any, func([]any) error) error
+	}) map[string]int64 {
+		out := map[string]int64{}
+		db.Query("SELECT reason, sum(n) FROM usage_refused GROUP BY reason", nil, func(r []any) error {
+			out[r[0].(string)] = r[1].(int64)
+			return nil
+		})
+		return out
+	}
+
+	pol, err := policy.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlStore := memStore(t)
+	defer sqlStore.Close()
+	sqlRuntime(t, sqlStore.DB(), pol, "usage.precompute", "usage", evs, 4999)
+	st := memStore(t)
+	defer st.Close()
+	pol2, _ := policy.Parse(src)
+	eng, err := engine.Open(st, pol2, "usage.precompute")
+	if err != nil {
+		t.Fatal(err)
+	}
+	runEngine(t, eng, "usage", evs, 0, 8)
+	rows := compareFiles(t, sqlStore.DB(), st.DB())
+	got := refusedBy(st)
+	if got["ahead"] != 3 {
+		t.Errorf("refused as ahead: %d, want the 3 planted reports (all refusals: %v)", got["ahead"], got)
+	}
+	if eng.Now() >= far {
+		t.Errorf("the Engine's clock moved to a refused time: %d", eng.Now())
+	}
+	var newest int64
+	st.Query("SELECT newest FROM usage_clock", nil, func(r []any) error { newest = r[0].(int64); return nil })
+	if newest >= far {
+		t.Errorf("usage_clock.newest moved to a refused time: %d", newest)
+	}
+	t.Logf("%d events, %d rows identical; refused: %v", len(evs), rows, got)
+
+	// The same reports without the rule: the first planted one moves the clock to 2100 and every
+	// report after it is refused, which is what ahead is for.
+	plain := memStore(t)
+	defer plain.Close()
+	pol3, _ := policy.Parse(string(base))
+	sqlRuntime(t, plain.DB(), pol3, "usage.precompute", "usage", evs, 4999)
+	without := refusedBy(plain)
+	if without["closed"]+without["late"] < int64(len(evs)-mid-len(planted)) {
+		t.Errorf("without ahead, the reports after the planted one should be refused: %v", without)
+	}
+}
+
+// TestAheadWallClock: the Engine compares with its wall clock, which tests and replays may set.
+func TestAheadWallClock(t *testing.T) {
+	src := `stream usage exact {
+  id     request_id refuse repeats 7d
+  key    customer text
+  value  tokens integer
+  ahead  10m
+  period day close 1h
+  raw    until closed + 1d
+  rollup 1h keep 30d
+}`
+	pol, err := policy.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := memStore(t)
+	defer st.Close()
+	eng, err := engine.Open(st, pol, "t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := int64(1790000000)
+	eng.SetWall(func() int64 { return now })
+	s := eng.Stream("usage")
+	key, _ := eng.Key(s, "acme")
+	for i, ts := range []int64{now, now + 600, now + 601, now + 7200} {
+		if err := eng.PutID(s, "a", int64(i+1), ts, fmt.Sprintf("r%d", i), key, []float64{5}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := eng.Stats().Refused; got != 2 {
+		t.Errorf("refused %d, want 2: at most 10 minutes ahead is counted", got)
+	}
+	if eng.Now() != now+600 {
+		t.Errorf("clock %d, want %d", eng.Now(), now+600)
+	}
+	now += 7200 // the wall clock catches up: the same time is now counted
+	if err := eng.PutID(s, "a", 5, now, "r9", key, []float64{5}); err != nil {
+		t.Fatal(err)
+	}
+	if got := eng.Stats().Refused; got != 2 {
+		t.Errorf("refused %d after the clock caught up, want still 2", got)
+	}
+}

@@ -272,7 +272,7 @@ func (p *parser) stream() (*Stream, error) {
 			return s, nil
 		}
 		if t.Kind != Ident {
-			return nil, errAt(t, "expected a stream line (key, value, derive, raw, rollup, samples, anomalies, quantile accuracy, or in an exact stream id, late and period), found %s", describe(t))
+			return nil, errAt(t, "expected a stream line (key, value, derive, raw, rollup, samples, anomalies, quantile accuracy, or in an exact stream id, late, ahead and period), found %s", describe(t))
 		}
 		switch t.Text {
 		case "key", "value":
@@ -371,6 +371,15 @@ func (p *parser) stream() (*Stream, error) {
 				return nil, err
 			}
 			s.Late = d.Secs
+		case "ahead":
+			if s.Ahead != 0 {
+				return nil, errAt(t, "ahead is declared twice in stream %q", s.Name)
+			}
+			d, err := p.duration()
+			if err != nil {
+				return nil, err
+			}
+			s.Ahead, s.AheadPos = d.Secs, t.Pos
 		case "period":
 			if s.Period != "" {
 				return nil, errAt(t, "period is declared twice in stream %q", s.Name)
@@ -459,7 +468,7 @@ func (p *parser) stream() (*Stream, error) {
 			}
 			s.Accuracy, s.AccPos = pt.Num, t.Pos
 		default:
-			return nil, errAt(t, "%q is not a stream line; expected key, value, derive, raw, rollup, samples, anomalies, quantile accuracy, or in an exact stream id, late and period", t.Text)
+			return nil, errAt(t, "%q is not a stream line; expected key, value, derive, raw, rollup, samples, anomalies, quantile accuracy, or in an exact stream id, late, ahead and period", t.Text)
 		}
 	}
 }
