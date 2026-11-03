@@ -79,8 +79,9 @@ Design decisions:
   value, a histogram point fills values named `count`, `sum`, `min` and `max`.
   Cumulative sums and histograms become deltas per series; a restart of the
   series (new start time) counts from zero. Points of other kinds are skipped
-  and counted. OTLP has no sequence numbers, so a retried export after a
-  crash may count twice; the docs say so.
+  and counted. OTLP has no sequence numbers: each counted request's SHA-256
+  is kept for an hour (in the file, with the checkpoint), so a retry counts
+  once; series state for cumulative points is kept in the file too.
 - Phase C, policy migration: `precomputing migrate --policy NEW FILE`
   (offline, one writer). Allowed: new streams, rollups, precomputes, quotas,
   samples and anomaly settings, keep durations, `raw until closed + D`, and
